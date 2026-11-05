@@ -29,3 +29,8 @@ test('hồ sơ người chơi giữ điểm, số ván thắng và chuỗi thắ
 
 
 test('UNO khóa lượt trong thời gian hiệu ứng sau khi đánh bài',()=>{const a={id:'a',name:'A'},b={id:'b',name:'B'};const game={type:'uno',seats:[a,b],hands:[['R5','B1'],['G1']],turn:0,winner:-1,last:[],history:[],direction:1,color:'R',top:'R2',draw:[],discard:[],scores:[0,0],pendingDraw:null,drawnCardSeat:-1,unoPendingSeat:-1,unoCalledSeat:-1,turnDeadline:Date.now()+25000};const room={code:'lock-test',players:new Map([['a',a],['b',b]]),game,events:new Set()};const result=act(room,a,{type:'play',card:'R5'});assert.equal(result.ok,true);assert.equal(game.turn,0);assert.ok(game.turnLockUntil>Date.now());assert.equal(publicState(room,'').game.turnLocked,true);assert.equal(act(room,b,{type:'play',card:'G1'}).error,'effect_in_progress');clearTimeout(room.effectTimer);});
+
+const { chooseUnoMove } = require('../server');
+test('Bot UNO ưu tiên lá hành động khi người kế tiếp gần hết bài',()=>{const g={color:'R',top:'R5',direction:1,seats:[{id:'a'},{id:'b'}],hands:[[],['G1','G2']]};const move=chooseUnoMove(['R3','RD','WF'],g,0);assert.equal(move.card,'RD');});
+test('Bot UNO giữ lá đổi màu khi vẫn có lựa chọn cùng màu',()=>{const g={color:'R',top:'R5',direction:1,seats:[{id:'a'},{id:'b'}],hands:[[],['G1','G2','G3']]};const move=chooseUnoMove(['WF','R4','R8'],g,0);assert.notEqual(move.card,'WF');});
+test('Bot UNO chọn màu có nhiều lá nhất sau khi dùng lá đổi màu',()=>{const g={color:'R',top:'R5',direction:1,seats:[{id:'a'},{id:'b'}],hands:[[],['G1']]};const move=chooseUnoMove(['WF','B4','B8','B9','Y2'],g,0);assert.equal(move.card,'WF');assert.equal(move.color,'B');});
