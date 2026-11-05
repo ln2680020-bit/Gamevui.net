@@ -127,7 +127,6 @@ function act(r, p, command) {
     }
     if(command.type==='draw') {
       if(g.drawnCardSeat===i) return {ok:false,error:'already_drew'};
-      if(g.hands[i].some(card=>unoCanPlay(card,g))) return {ok:false,error:'must_play_if_possible'};
       drawCards(g,i,1);
       const drawn=g.hands[i][g.hands[i].length-1];
       addHistory(g,`${p.name} bốc 1 lá`,i,'draw');
