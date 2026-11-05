@@ -29,13 +29,19 @@ function send(r) { for (const entry of r.events) { const p = playerFor(r, entry.
 function nextTurn(g, steps = 1) { const n = g.seats.length; g.turn = (g.turn + g.direction * steps % n + n) % n; }
 function makeSamDeck() { const d = []; for (let rank = 3; rank <= 15; rank++) for (let suit = 0; suit < 4; suit++) d.push(rank * 4 + suit); return shuffle(d); }
 function samCombo(cards) { if (!Array.isArray(cards) || !cards.length) return null; const ranks = cards.map(c => c >> 2).sort((a,b) => a-b); if (ranks.every(x => x === ranks[0])) return { kind: 'set', size: ranks.length, high: ranks[0] }; if (ranks.length >= 3 && ranks[ranks.length-1] < 15 && ranks.every((x,i) => i === 0 || x === ranks[i-1] + 1)) return { kind: 'run', size: ranks.length, high: ranks.at(-1) }; return null; }
-function beats(a,b) { return !b || (a.kind === b.kind && a.size === b.size && a.high > b.high) || (a.kind === 'set' && a.size === 4 && b.kind === 'set' && b.size === 1 && b.high === 15); }
+function beats(a,b) {
+  if (!b) return true;
+  // Tứ quý chặt một lá 2; tứ quý cùng loại lớn hơn cũng chặt tứ quý nhỏ hơn.
+  if (a.kind === 'set' && a.size === 4 && b.kind === 'set' && b.size === 1 && b.high === 15) return true;
+  return a.kind === b.kind && a.size === b.size && a.high > b.high;
+}
 function findSamMove(hand, lastCombo) {
   const cards = hand.slice().sort((a,b) => (a >> 2) - (b >> 2));
   let best = null;
   function visit(start, picked) {
     if (picked.length) {
-      const combo = samCombo(picked);
+      const finishesWithTwo = picked.length === hand.length && picked.some(card => (card >> 2) === 15);
+      const combo = finishesWithTwo ? null : samCombo(picked);
       if (combo && beats(combo, lastCombo)) {
         if (!best || picked.length < best.length || (picked.length === best.length && combo.high < best.combo.high)) best = { cards: picked.slice(), combo };
       }
@@ -65,6 +71,7 @@ function act(r, p, command) {
     if(command.type!=='play' || !Array.isArray(command.cards) || !command.cards.length || command.cards.length>10) return {ok:false,error:'invalid_move'};
     const hand=g.hands[i]; if(new Set(command.cards).size!==command.cards.length || !command.cards.every(c=>hand.includes(c))) return {ok:false,error:'cards_not_in_hand'};
     const combo=samCombo(command.cards); if(!combo || !beats(combo,g.lastCombo)) return {ok:false,error:'invalid_combo'};
+    if(command.cards.length===hand.length && command.cards.some(card=>(card>>2)===15)) return {ok:false,error:'cannot_finish_with_two'};
     g.hands[i]=hand.filter(c=>!command.cards.includes(c)); g.last=[...command.cards].sort((a,b)=>a-b); g.lastCombo=combo; g.lastPlayer=i; g.passes=[]; g.message=`${p.name} đã đánh bài`;
     if(!g.hands[i].length) endGame(g,i); else nextTurn(g); return {ok:true};
   }
