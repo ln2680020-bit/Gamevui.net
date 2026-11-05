@@ -71,13 +71,13 @@ async function globalLeaderboard(mode) {
   await initDatabase();
   const result = await pool.query(`
     SELECT id, name,
-      COALESCE((stats->>$1)::jsonb->>'wins','0')::int AS wins,
-      COALESCE((stats->>$1)::jsonb->>'games','0')::int AS games,
-      COALESCE((stats->>$1)::jsonb->>'points','0')::int AS points,
+      COALESCE((stats -> $1 ->> 'wins')::int,0) AS wins,
+      COALESCE((stats -> $1 ->> 'games')::int,0) AS games,
+      COALESCE((stats -> $1 ->> 'points')::int,0) AS points,
       streak, best_streak
     FROM player_profiles
-    ORDER BY COALESCE((stats->>$1)::jsonb->>'wins','0')::int DESC,
-             COALESCE((stats->>$1)::jsonb->>'points','0')::int DESC,
+    ORDER BY COALESCE((stats -> $1 ->> 'wins')::int,0) DESC,
+             COALESCE((stats -> $1 ->> 'points')::int,0) DESC,
              best_streak DESC
     LIMIT 50
   `, [mode]);
