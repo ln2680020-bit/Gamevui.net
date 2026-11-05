@@ -93,7 +93,7 @@ function act(r, p, command) {
       drawCards(g,g.unoPendingSeat,2);
       addHistory(g,`${g.seats[g.unoPendingSeat].name} quên báo UNO và bị phạt rút 2 lá`,g.unoPendingSeat,'penalty');
       g.message=`${g.seats[g.unoPendingSeat].name} bị phạt 2 lá vì quên báo UNO`;
-      g.unoPendingSeat=-1;g.unoCalledSeat=-1;send(r);return {ok:true};
+      g.unoPendingSeat=-1;g.unoCalledSeat=-1;delayTurn(r,g,g.turn);send(r);return {ok:true};
     }
     if(command.type==='uno') {
       if(i!==g.turn||g.hands[i].length!==2||g.unoCalledSeat===i) return {ok:false,error:'cannot_call_uno'};
