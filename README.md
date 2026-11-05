@@ -30,3 +30,11 @@ Trình duyệt tạo một mã hồ sơ ngẫu nhiên và lưu trong localStorag
 - Bảng xếp hạng toàn hệ thống qua `/api/leaderboard/global?mode=sam` hoặc `mode=uno`.
 
 Không đưa mật khẩu hoặc URL database vào mã nguồn GitHub. Giữ `DATABASE_URL` trong phần Environment của Render.
+
+## Cửa hàng giao diện Beta
+
+- Người chơi nhận 20 xu khi hoàn thành một ván; người thắng nhận thêm 10 xu.
+- Xu dùng để mở khóa mặt bàn và kiểu viền lá bài. Vật phẩm chỉ thay đổi hình thức, không tác động luật chơi.
+- Xu, vật phẩm đã mua và lựa chọn đang trang bị được lưu trong localStorage của trình duyệt hiện tại. Xóa dữ liệu trình duyệt hoặc đổi thiết bị có thể làm mất dữ liệu Beta.
+- Không có nạp tiền thật, giao dịch thật hoặc đổi thưởng bằng tiền.
+- Cửa hàng hiện là bản thử nghiệm phía trình duyệt; chưa có đồng bộ giữa các thiết bị và chưa cần cấu hình PostgreSQL.
