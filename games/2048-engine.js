@@ -37,7 +37,7 @@
         if(second&&first.value===second.value){
           const value=first.value*2;
           next[target.row][target.col]=value;score+=value;
-          moves.push({from:first.from,to:target,value,merged:true});
+          moves.push({from:first.from,to:target,value:first.value,merged:true});
           moves.push({from:second.from,to:target,value:second.value,merged:true});
           merges.push({at:target,value});
           source+=2;
