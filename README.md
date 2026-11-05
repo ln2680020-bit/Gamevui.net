@@ -1,4 +1,4 @@
-# Gamevui.net — Sâm & UNO
+# Gamevui.net — Game Hub, Sâm & UNO
 
 ## Chạy ứng dụng
 
@@ -49,3 +49,12 @@ Không đưa mật khẩu hoặc URL database vào mã nguồn GitHub. Giữ `DA
   - `TURN_URLS`: comma-separated TURN/TURNS URLs.
   - `TURN_SECRET`: shared secret for time-limited TURN REST credentials.
 - Without TURN configuration, the client uses a public STUN server only; some restrictive networks may fail to connect.
+
+
+## Game Hub
+
+- Trang chủ Arcade được phục vụ tại `/`.
+- Chọn Sâm hoặc UNO để tạo phòng riêng hoặc tham gia bằng mã.
+- Phòng lưu loại trò chơi; người chơi không thể bắt đầu nhầm Sâm trong phòng UNO hoặc ngược lại.
+- Tài khoản và hồ sơ hiện có được dùng chung. Chế độ khách vẫn được hỗ trợ.
+- Giao diện game hiện tại được phục vụ tại `/play`; các trò chơi chưa phát hành được đánh dấu “Sắp ra mắt”.
