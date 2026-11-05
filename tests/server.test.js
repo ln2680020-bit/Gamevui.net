@@ -1,10 +1,14 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { samCombo, beats, publicState, rooms } = require('../server');
+const { samCombo, beats, findSamMove, publicState, rooms } = require('../server');
 test('Sâm nhận diện bộ cùng hạng',()=>assert.deepEqual(samCombo([12,13,14]),{kind:'set',size:3,high:3}));
 test('Sâm nhận diện sảnh liên tiếp',()=>assert.deepEqual(samCombo([12,16,20]),{kind:'run',size:3,high:5}));
 test('Sâm từ chối tổ hợp không hợp lệ',()=>assert.equal(samCombo([12,20,28]),null));
 test('bộ lớn hơn cùng loại được chấp nhận',()=>assert.equal(beats({kind:'set',size:2,high:8},{kind:'set',size:2,high:7}),true));
 test('bộ khác loại không chặn được',()=>assert.equal(beats({kind:'run',size:3,high:8},{kind:'set',size:3,high:7}),false));
 test('trạng thái chỉ gửi bài của đúng người xem',()=>{const room={code:'x',players:new Map(),game:{type:'sam',seats:[{id:'a',name:'A'},{id:'b',name:'B'}],hands:[[1,2],[3,4]],turn:0,winner:-1,last:[],scores:[0,0],direction:1,color:'',top:'',samCalled:-1,passes:[]}};const a={id:'a',token:'ta',name:'A'},b={id:'b',token:'tb',name:'B'};room.players.set('a',a);room.players.set('b',b);assert.deepEqual(publicState(room,'ta').game.hand,[1,2]);assert.deepEqual(publicState(room,'tb').game.hand,[3,4]);assert.equal(publicState(room,'ta').game.hands,undefined);});
+
+test('Bot chọn đủ đôi để chặn đôi',()=>{const move=findSamMove([24,25,28,29],{kind:'set',size:2,high:5});assert.deepEqual(move.cards,[24,25]);assert.equal(move.combo.high,6);});
+test('Bot chọn sảnh đủ số lá để chặn sảnh',()=>{const move=findSamMove([16,20,24,28],{kind:'run',size:3,high:4});assert.deepEqual(move.cards,[16,20,24]);assert.equal(move.combo.high,6);});
+test('Bot trả về null khi không có nước chặn hợp lệ',()=>assert.equal(findSamMove([12,13,14],{kind:'set',size:2,high:10}),null));
