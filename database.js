@@ -233,7 +233,7 @@ async function recordMatch({ gameType, winnerId, points = 0, participants = [] }
       CASE WHEN p->>'id' = $2 THEN GREATEST($3, 0) ELSE 0 END,
       GREATEST(jsonb_array_length($4::jsonb) - 1, 0),
       $4::jsonb
-    FROM jsonb_array_elements($4::jsonb) AS p
+    FROM jsonb_array_elements($4::jsonb) AS participant(p)
     WHERE EXISTS (SELECT 1 FROM player_profiles WHERE id = p->>'id')
     RETURNING id
   `, [gameType, String(winnerId || ''), Number(points) || 0, JSON.stringify(safeParticipants)]);
