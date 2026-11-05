@@ -25,14 +25,14 @@ button,input{font:inherit;border-radius:12px}button{border:1px solid #ffffff24;b
 <div class="wrap">
 <header class="top"><div class="brand"><span class="brand-mark">🎮</span><span>GAMEVUI<span style="color:var(--gold)">.NET</span></span></div><small>ARCADE · BETA</small></header>
 <section class="hero"><div class="eyebrow">YOUR GAME SPACE</div><h1>Một nơi, nhiều cuộc vui.</h1><p>Chọn trò chơi yêu thích, tạo phòng cùng bạn bè hoặc tham gia bằng mã phòng. Hồ sơ người chơi được dùng chung giữa các trò chơi.</p></section>
-<div class="section-head"><h2>Chọn trò chơi</h2><span>2 trò chơi đang hoạt động</span></div>
+<div class="section-head"><h2>Chọn trò chơi</h2><span>3 trò chơi đang hoạt động</span></div>
 <section class="games" id="games">
 <button class="game" data-game="sam"><div class="game-icon">🃏</div><h3>Sâm</h3><p>Chiến thuật, đọc bài và chọn thời điểm ra quân.</p><span class="tag live">● ĐANG HOẠT ĐỘNG</span></button>
 <button class="game uno" data-game="uno"><div class="game-icon">🎴</div><h3>UNO</h3><p>Ghép màu, đánh số và xoay chuyển lượt chơi.</p><span class="tag live">● ĐANG HOẠT ĐỘNG</span></button>
 <button class="game soon" disabled><div class="game-icon">♟️</div><h3>Cờ vua</h3><p>Đấu trí theo lượt, sắp ra mắt.</p><span class="tag soon-tag">SẮP RA MẮT</span></button>
 <button class="game soon" disabled><div class="game-icon">⭕</div><h3>Cờ caro</h3><p>Thử thách chiến thuật ngắn, sắp ra mắt.</p><span class="tag soon-tag">SẮP RA MẮT</span></button>
 <button class="game soon" disabled><div class="game-icon">🏙️</div><h3>Cờ tỷ phú</h3><p>Trò chơi bàn cờ giải trí, sắp ra mắt.</p><span class="tag soon-tag">SẮP RA MẮT</span></button>
-<button class="game soon" disabled><div class="game-icon">🧩</div><h3>2048</h3><p>Ghép ô số và phá kỷ lục, sắp ra mắt.</p><span class="tag soon-tag">SẮP RA MẮT</span></button>
+<button class="game" data-action="launch-2048"><div class="game-icon">🧩</div><h3>2048</h3><p>Ghép ô số, chinh phục mốc 2048 và phá kỷ lục.</p><span class="tag live">● ĐANG HOẠT ĐỘNG</span></button>
 </section>
 <section class="panel rooms-panel" id="public-rooms-panel"><div class="room-toolbar"><div><h2>Phòng đang chờ</h2><div class="muted" id="room-count">Đang tải danh sách phòng…</div></div><div class="filters" role="group" aria-label="Lọc phòng"><button class="filter active" data-filter="all">Tất cả</button><button class="filter" data-filter="sam">Sâm</button><button class="filter" data-filter="uno">UNO</button><button class="filter" data-action="refresh-rooms">↻ Làm mới</button></div></div><div class="room-list" id="public-room-list"><div class="empty-rooms">Đang tải phòng công khai…</div></div></section>
 <section class="panel rooms-panel" id="ranking-panel"><div class="ranking-heading"><div><h2>🏆 Bảng xếp hạng toàn hệ thống</h2><div class="muted" id="ranking-caption">Bảng xếp hạng đang thu gọn</div></div><button type="button" class="filter ranking-toggle" id="ranking-toggle" data-action="toggle-ranking" aria-controls="ranking-content" aria-expanded="false">Mở bảng ▾</button></div><div id="ranking-content" class="ranking-content hidden"><div class="room-toolbar"><div class="muted">Chọn trò chơi để xem thứ hạng</div><div class="filters"><button class="filter active" data-ranking="sam">Sâm</button><button class="filter" data-ranking="uno">UNO</button><button class="filter" data-action="refresh-ranking">↻ Làm mới</button></div></div><div class="ranking-scroll"><div id="ranking-list" class="room-list"><div class="empty-rooms">Đang tải bảng xếp hạng…</div></div></div><div id="public-profile" class="empty-rooms hidden" style="margin-top:12px;text-align:left"></div></div></section>
@@ -145,6 +145,7 @@ document.addEventListener('click',async e=>{
  const button=e.target.closest('[data-action]');if(!button)return;const action=button.dataset.action;
  try{
   setStatus('#account-status','');setStatus('#room-status','');
+  if(action==='launch-2048'){window.location.href='/games/2048';return;}
   if(action==='toggle-ranking'){const content=$('#ranking-content'),opening=content.classList.contains('hidden');content.classList.toggle('hidden',!opening);button.setAttribute('aria-expanded',String(opening));button.textContent=opening?'Thu gọn ▴':'Mở bảng ▾';if(opening)await loadRanking();return;}
   if(action==='refresh-rooms'){await loadRooms();}
   else if(action==='refresh-ranking'){await loadRanking();}
