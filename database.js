@@ -188,9 +188,10 @@ async function getOrCreateProfile(profileToken, name, userId = null) {
     INSERT INTO player_profiles (id, token_hash, name)
     VALUES ($1, $2, $3)
     ON CONFLICT (token_hash) DO UPDATE SET name = EXCLUDED.name, updated_at = NOW()
+    WHERE player_profiles.user_id IS NULL
     RETURNING id, name, avatar, score, wins, games, streak, best_streak, stats
   `, [crypto.randomBytes(18).toString('hex'), hash, cleanName(name)]);
-  return result.rows[0];
+  return result.rows[0] || null;
 }
 
 async function saveProfile(player) {
