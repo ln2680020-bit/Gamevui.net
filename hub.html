@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#08121f">
+<title>Gamevui.net · Game Hub</title>
+<style>
+:root{color-scheme:dark;--bg:#08121f;--panel:#111f33;--line:#ffffff20;--text:#f4f7ff;--muted:#aab8ce;--gold:#ffd36a;--cyan:#64d8ee}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 15% 0,#1b4260 0,transparent 42%),radial-gradient(ellipse at 90% 10%,#34245e 0,transparent 38%),var(--bg);color:var(--text);font:15px/1.5 system-ui,sans-serif}
+button,input{font:inherit;border-radius:12px}button{border:1px solid #ffffff24;background:linear-gradient(135deg,#267b9a,#3156a0);color:white;padding:11px 16px;font-weight:800;cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}input{width:100%;padding:12px 13px;color:white;background:#091626;border:1px solid #ffffff2a;outline:none}input:focus{border-color:var(--cyan)}
+.wrap{width:min(1120px,100%);margin:auto;padding:24px 18px 48px}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:34px}.brand{display:flex;align-items:center;gap:11px;font-size:21px;font-weight:950;letter-spacing:.3px}.brand-mark{display:grid;place-items:center;width:42px;height:42px;border-radius:14px;background:linear-gradient(135deg,#f7c75b,#ed7b65);color:#18233a;font-size:23px;box-shadow:0 8px 25px #e78c5844}.top small{color:var(--muted)}
+.hero{padding:30px 0 24px}.eyebrow{color:var(--cyan);font-weight:900;letter-spacing:2px;font-size:11px}.hero h1{font-size:clamp(32px,6vw,54px);line-height:1.05;margin:9px 0 12px;letter-spacing:-1.8px}.hero p{max-width:620px;color:var(--muted);margin:0}
+.section-head{display:flex;align-items:end;justify-content:space-between;gap:12px;margin:24px 0 12px}.section-head h2{margin:0;font-size:19px}.section-head span{font-size:12px;color:var(--muted)}
+.games{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}.game{position:relative;min-height:190px;overflow:hidden;text-align:left;padding:18px;border:1px solid var(--line);border-radius:19px;background:linear-gradient(145deg,#173d50,#14233b 70%);box-shadow:0 12px 30px #0003;transition:transform .18s,border-color .18s}.game:hover{transform:translateY(-3px);border-color:#ffffff55}.game:before{content:"";position:absolute;width:150px;height:150px;right:-34px;top:-42px;border-radius:50%;background:#ffffff0c}.game.uno{background:linear-gradient(145deg,#5b252b,#2c1d37 72%)}.game.soon{background:linear-gradient(145deg,#26334a,#182235);filter:saturate(.65)}.game-icon{font-size:39px;line-height:1.2}.game h3{font-size:20px;margin:15px 0 3px}.game p{font-size:12px;color:#c1cde0;margin:0;max-width:230px}.tag{display:inline-block;margin-top:13px;padding:4px 8px;border-radius:30px;background:#ffffff15;font-size:10px;font-weight:900;letter-spacing:.7px}.tag.live{color:#a4f4c3;background:#1a694a55}.tag.soon-tag{color:#f3d48a}
+.lower{display:grid;grid-template-columns:1.2fr .8fr;gap:14px;margin-top:24px}.panel{border:1px solid var(--line);border-radius:18px;background:#101e31eF;padding:18px;box-shadow:0 12px 30px #0002}.panel h2{font-size:17px;margin:0 0 4px}.muted{color:var(--muted);font-size:12px}.fields{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:13px}.fields.one{grid-template-columns:1fr}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.secondary{background:#ffffff0d}.status{min-height:18px;margin-top:10px;color:#ffe09a;font-size:13px}.account-status{display:flex;align-items:center;justify-content:space-between;gap:10px}.account-status strong{font-size:15px}.account-status .avatar{font-size:26px}.hidden{display:none!important}
+#room-panel{margin-top:16px}.room-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.room-actions>div{padding:13px;border-radius:13px;background:#ffffff08;border:1px solid var(--line)}.room-actions h3{font-size:14px;margin:0 0 7px}.room-actions p{font-size:11px;color:var(--muted);margin:0 0 9px}.foot{margin-top:28px;text-align:center;color:#7f90a8;font-size:11px}
+@media(max-width:760px){.wrap{padding:15px 12px 34px}.top{margin-bottom:20px}.hero{padding:18px 0}.games{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.game{min-height:168px;padding:13px}.game-icon{font-size:32px}.game h3{font-size:17px;margin-top:11px}.game p{font-size:11px}.lower{grid-template-columns:1fr}.fields{grid-template-columns:1fr}.room-actions{grid-template-columns:1fr}.section-head{margin-top:19px}}
+@media(max-width:370px){.games{grid-template-columns:1fr}.game{min-height:145px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top"><div class="brand"><span class="brand-mark">🎮</span><span>GAMEVUI<span style="color:var(--gold)">.NET</span></span></div><small>ARCADE · BETA</small></header>
+<section class="hero"><div class="eyebrow">YOUR GAME SPACE</div><h1>Một nơi, nhiều cuộc vui.</h1><p>Chọn trò chơi yêu thích, tạo phòng cùng bạn bè hoặc tham gia bằng mã phòng. Hồ sơ người chơi được dùng chung giữa các trò chơi.</p></section>
+<div class="section-head"><h2>Chọn trò chơi</h2><span>2 trò chơi đang hoạt động</span></div>
+<section class="games" id="games">
+<button class="game" data-game="sam"><div class="game-icon">🃏</div><h3>Sâm</h3><p>Chiến thuật, đọc bài và chọn thời điểm ra quân.</p><span class="tag live">● ĐANG HOẠT ĐỘNG</span></button>
+<button class="game uno" data-game="uno"><div class="game-icon">🎴</div><h3>UNO</h3><p>Ghép màu, đánh số và xoay chuyển lượt chơi.</p><span class="tag live">● ĐANG HOẠT ĐỘNG</span></button>
+<button class="game soon" disabled><div class="game-icon">♟️</div><h3>Cờ vua</h3><p>Đấu trí theo lượt, sắp ra mắt.</p><span class="tag soon-tag">SẮP RA MẮT</span></button>
+<button class="game soon" disabled><div class="game-icon">⭕</div><h3>Cờ caro</h3><p>Thử thách chiến thuật ngắn, sắp ra mắt.</p><span class="tag soon-tag">SẮP RA MẮT</span></button>
+<button class="game soon" disabled><div class="game-icon">🏙️</div><h3>Cờ tỷ phú</h3><p>Trò chơi bàn cờ giải trí, sắp ra mắt.</p><span class="tag soon-tag">SẮP RA MẮT</span></button>
+<button class="game soon" disabled><div class="game-icon">🧩</div><h3>2048</h3><p>Ghép ô số và phá kỷ lục, sắp ra mắt.</p><span class="tag soon-tag">SẮP RA MẮT</span></button>
+</section>
+<section class="lower">
+<div class="panel" id="room-panel">
+<h2 id="selected-title">Chọn Sâm hoặc UNO để tiếp tục</h2><div class="muted" id="selected-desc">Sau khi chọn trò chơi, bạn có thể tạo phòng mới hoặc tham gia phòng có sẵn.</div>
+<div class="room-actions hidden" id="room-actions">
+<div><h3>＋ Tạo phòng mới</h3><p>Tạo phòng riêng và nhận mã để mời bạn bè.</p><button data-action="create">Tạo phòng</button></div>
+<div><h3>↗ Tham gia phòng</h3><p>Nhập mã phòng do bạn bè gửi.</p><input id="room-code" maxlength="20" placeholder="Nhập mã phòng"><button data-action="join" style="margin-top:8px;width:100%">Tham gia</button></div>
+</div><div class="status" id="room-status" aria-live="polite"></div>
+</div>
+<div class="panel">
+<div id="account-view">
+<h2>Tài khoản & hồ sơ</h2><div class="muted">Đăng nhập để dùng hồ sơ trên nhiều thiết bị. Bạn cũng có thể chơi với tư cách khách.</div>
+<div class="fields one"><input id="email" type="email" autocomplete="email" placeholder="Email"><input id="password" type="password" autocomplete="current-password" placeholder="Mật khẩu (ít nhất 10 ký tự)"><input id="nickname" maxlength="24" placeholder="Tên hiển thị (khi đăng ký)"></div>
+<div class="actions"><button data-action="login">Đăng nhập</button><button class="secondary" data-action="register">Tạo tài khoản</button><button class="secondary" data-action="guest">Tiếp tục khách</button></div>
+</div>
+<div id="signed-view" class="hidden"><div class="account-status"><div><div class="muted">Đang đăng nhập</div><strong id="signed-name">Người chơi</strong><div class="muted" id="signed-email"></div></div><span class="avatar">👤</span></div><div class="actions"><button class="secondary" data-action="logout">Đăng xuất</button></div></div>
+<div class="status" id="account-status" aria-live="polite"></div>
+</div>
+</section>
+<div class="foot">Gamevui.net · Bản thử nghiệm · Không có cược hoặc giao dịch tiền thật</div>
+</div>
+<script>
+'use strict';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let selectedGame='',account=null,guestMode=false;
+function profileToken(){let value=localStorage.getItem('samuno:profile-token');if(!value){const b=new Uint8Array(32);crypto.getRandomValues(b);value=Array.from(b,x=>x.toString(16).padStart(2,'0')).join('');localStorage.setItem('samuno:profile-token',value);}return value;}
+function setStatus(id,message){$(id).textContent=message||'';}
+function selectGame(game){selectedGame=game;const label=game==='uno'?'UNO':'Sâm';$('#selected-title').textContent='Phòng '+label;$('#selected-desc').textContent='Tạo phòng '+label+' mới hoặc nhập mã phòng '+label+' do bạn bè gửi.';$('#room-actions').classList.remove('hidden');setStatus('#room-status','');}
+async function api(url,options={}){const r=await fetch(url,{...options,headers:{'content-type':'application/json',...(options.headers||{})}});const data=await r.json();if(!r.ok)throw new Error(data.error||'request_failed');return data;}
+async function refreshAccount(){const data=await api('/api/auth/me',{headers:{}});account=data.user;guestMode=!account;renderAccount();}
+function renderAccount(){if(account){$('#account-view').classList.add('hidden');$('#signed-view').classList.remove('hidden');$('#signed-name').textContent=account.nickname||'Người chơi';$('#signed-email').textContent=account.email||'';}else{$('#account-view').classList.remove('hidden');$('#signed-view').classList.add('hidden');}}
+function explain(error){return ({email_exists:'Email này đã được đăng ký.',invalid_email:'Email chưa đúng định dạng.',weak_password:'Mật khẩu cần có ít nhất 10 ký tự.',invalid_credentials:'Email hoặc mật khẩu chưa đúng.',too_many_attempts:'Bạn đã thử quá nhiều lần. Hãy đợi 15 phút.',persistence_unavailable:'Máy chủ chưa bật lưu tài khoản.',wrong_game:'Mã phòng này thuộc trò chơi khác.',room_not_found:'Không tìm thấy phòng. Hãy kiểm tra lại mã.',room_full:'Phòng đã đủ người.'})[error]||error;}
+async function enterRoom(code){const clean=String(code||'').trim();if(!/^[a-zA-Z0-9_-]{1,20}$/.test(clean))throw new Error('invalid_room');const info=await api('/api/room/info?room='+encodeURIComponent(clean),{method:'GET',headers:{}});if(info.gameType!==selectedGame)throw new Error('wrong_game');const joined=await api('/api/join',{method:'POST',body:JSON.stringify({room:clean,game:selectedGame,name:account?.nickname||localStorage.getItem('samuno:hub-name')||'Người chơi',profileToken:profileToken()})});localStorage.setItem('samuno:'+clean,JSON.stringify({token:joined.token}));location.href='/play?room='+encodeURIComponent(clean)+'&game='+selectedGame;}
+$('#games').addEventListener('click',e=>{const card=e.target.closest('[data-game]');if(card&&!card.disabled)selectGame(card.dataset.game);});
+document.addEventListener('click',async e=>{const button=e.target.closest('[data-action]');if(!button)return;const action=button.dataset.action;try{setStatus('#account-status','');setStatus('#room-status','');if(action==='login'||action==='register'){const email=$('#email').value.trim(),password=$('#password').value,nickname=$('#nickname').value.trim();const result=await api('/api/auth/'+(action==='login'?'login':'register'),{method:'POST',body:JSON.stringify({email,password,nickname,profileToken:profileToken()})});await refreshAccount();setStatus('#account-status',action==='login'?'Đăng nhập thành công.':'Tạo tài khoản thành công; hồ sơ khách đã được liên kết.');}else if(action==='guest'){account=null;guestMode=true;setStatus('#account-status','Bạn đang chơi với tư cách khách. Hồ sơ khách được lưu trên thiết bị này.');}else if(action==='logout'){await api('/api/auth/logout',{method:'POST',body:'{}'});account=null;renderAccount();setStatus('#account-status','Đã đăng xuất. Bạn có thể tiếp tục chơi khách.');}else if(action==='create'){if(!selectedGame)throw new Error('Hãy chọn Sâm hoặc UNO trước.');const made=await api('/api/room/create',{method:'POST',body:JSON.stringify({game:selectedGame})});await enterRoom(made.room);}else if(action==='join'){if(!selectedGame)throw new Error('Hãy chọn Sâm hoặc UNO trước.');await enterRoom($('#room-code').value);}}catch(error){const message=explain(error.message);setStatus(action==='create'||action==='join'?'#room-status':'#account-status',message);}});
+api('/api/auth/me',{method:'GET',headers:{}}).then(data=>{account=data.user;renderAccount();}).catch(()=>{account=null;renderAccount();});
+</script>
+</body></html>
