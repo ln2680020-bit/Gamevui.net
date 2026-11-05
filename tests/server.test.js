@@ -37,3 +37,5 @@ test('Bot UNO chọn màu có nhiều lá nhất sau khi dùng lá đổi màu',
 
 test('thống kê chiến thắng được tách riêng giữa Sâm và UNO',()=>{const a={id:'a',name:'A',score:0},b={id:'b',name:'B',score:0};const g={type:'sam',seats:[a,b],hands:[[],[1]],scores:[0,0],winner:-1,message:''};endGame(g,0);assert.equal(a.stats.sam.wins,1);assert.equal(a.stats.sam.games,1);assert.equal(a.stats.uno,undefined);assert.equal(b.stats.sam.games,1);});
 test('trạng thái phòng nhận diện đúng chủ phòng',()=>{const a={id:'a',token:'ta',name:'A'};const r={code:'private1',hostId:'a',isPrivate:true,players:new Map([['a',a]]),game:null};const state=publicState(r,'ta');assert.equal(state.isPrivate,true);assert.equal(state.isHost,true);});
+
+test('Bot Sâm ưu tiên đánh tổ hợp dài khi mở vòng',()=>{const move=findSamMove([12,16,20,24,28],null);assert.equal(move.cards.length,5);assert.equal(move.combo.kind,'run');});
