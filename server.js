@@ -144,7 +144,7 @@ function act(r, p, command) {
     if(g.drawnCardSeat===i&&card!==g.drawnCard)return {ok:false,error:'must_play_drawn_card'};
     if(!unoCanPlay(card,g))return {ok:false,error:'card_not_playable'};
     const oldColor=g.color;
-    if(card==='WF'&&!h.some(x=>x!==card&&x[0]===oldColor))return {ok:false,error:'wild_four_not_allowed'};
+    // +4 may be used as a bluff; the next player can challenge it.
     h.splice(at,1);g.discard.push(g.top);g.top=card;
     g.color=card[0]==='W'&&'RGBY'.includes(command.color)?command.color:card[0];
     g.drawnCardSeat=-1;g.drawnCard=null;
@@ -194,4 +194,4 @@ const cleanup=setInterval(()=>{const now=Date.now();for(const [code,r] of rooms)
 cleanup.unref();
 function shutdown(){clearInterval(cleanup);for(const r of rooms.values()){if(r.botTimer)clearTimeout(r.botTimer);if(r.turnTimer)clearTimeout(r.turnTimer);for(const e of r.events)e.res.end();}server.close(()=>process.exit(0));}
 if (require.main === module) { server.listen(PORT,()=>console.log(`Sam & UNO server listening on ${PORT}`)); process.on('SIGTERM',shutdown); process.on('SIGINT',shutdown); }
-module.exports={samCombo,beats,canFinishSam,findSamMove,endGame,publicState,rooms,server};
+module.exports={samCombo,beats,canFinishSam,findSamMove,endGame,publicState,rooms,server,act,unoDeck};
