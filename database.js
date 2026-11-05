@@ -71,6 +71,20 @@ async function initDatabase() {
       )
     `);
     await pool.query('CREATE INDEX IF NOT EXISTS game_user_sessions_user_idx ON game_user_sessions (user_id)');
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS player_match_history (
+        id BIGSERIAL PRIMARY KEY,
+        profile_id TEXT NOT NULL REFERENCES player_profiles(id) ON DELETE CASCADE,
+        game_type TEXT NOT NULL CHECK (game_type IN ('sam','uno')),
+        result TEXT NOT NULL CHECK (result IN ('won','lost')),
+        points INTEGER NOT NULL DEFAULT 0,
+        opponent_count SMALLINT NOT NULL DEFAULT 0,
+        participants JSONB NOT NULL DEFAULT '[]'::jsonb,
+        played_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    await pool.query('CREATE INDEX IF NOT EXISTS player_match_history_profile_idx ON player_match_history (profile_id, played_at DESC)');
+
     return true;
   })().catch(error => { ready = null; pool = null; throw error; });
   return ready;
@@ -204,6 +218,42 @@ async function saveProfile(player) {
   return true;
 }
 
+async function recordMatch({ gameType, winnerId, points = 0, participants = [] } = {}) {
+  if (!pool || !['sam','uno'].includes(gameType) || !Array.isArray(participants)) return false;
+  const safeParticipants = participants
+    .filter(p => p && !p.bot && typeof p.id === 'string' && p.id.length > 0)
+    .slice(0, 6)
+    .map(p => ({ id: p.id, name: cleanName(p.name) }));
+  if (!safeParticipants.length) return false;
+  const result = await pool.query(`
+    INSERT INTO player_match_history (profile_id, game_type, result, points, opponent_count, participants)
+    SELECT p->>'id',
+      $1,
+      CASE WHEN p->>'id' = $2 THEN 'won' ELSE 'lost' END,
+      CASE WHEN p->>'id' = $2 THEN GREATEST($3, 0) ELSE 0 END,
+      GREATEST(jsonb_array_length($4::jsonb) - 1, 0),
+      $4::jsonb
+    FROM jsonb_array_elements($4::jsonb) AS p
+    WHERE EXISTS (SELECT 1 FROM player_profiles WHERE id = p->>'id')
+    RETURNING id
+  `, [gameType, String(winnerId || ''), Number(points) || 0, JSON.stringify(safeParticipants)]);
+  return result.rowCount > 0;
+}
+
+async function matchHistory(profileId, limit = 20) {
+  if (!databaseEnabled()) return null;
+  await initDatabase();
+  const safeLimit = Math.min(50, Math.max(1, Number(limit) || 20));
+  const result = await pool.query(`
+    SELECT id, game_type, result, points, opponent_count, participants, played_at
+    FROM player_match_history
+    WHERE profile_id = $1
+    ORDER BY played_at DESC, id DESC
+    LIMIT $2
+  `, [String(profileId || ''), safeLimit]);
+  return result.rows;
+}
+
 async function globalLeaderboard(mode) {
   if (!databaseEnabled()) return null;
   await initDatabase();
@@ -220,4 +270,4 @@ async function globalLeaderboard(mode) {
 }
 
 async function closeDatabase() { if (pool) await pool.end(); pool = null; ready = null; }
-module.exports = { databaseEnabled, initDatabase, getOrCreateProfile, saveProfile, globalLeaderboard, createAccount, loginAccount, getSessionUser, deleteSession, updateAccountProfile, publicProfile, closeDatabase };
+module.exports = { databaseEnabled, initDatabase, getOrCreateProfile, saveProfile, globalLeaderboard, recordMatch, matchHistory, createAccount, loginAccount, getSessionUser, deleteSession, updateAccountProfile, publicProfile, closeDatabase };
