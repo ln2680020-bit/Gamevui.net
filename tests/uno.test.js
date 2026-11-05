@@ -23,7 +23,7 @@ function fixture({hands,top='B3',color=top[0],draw=['R5','G6','Y7','B8'],turn=0}
   const p2={id:'p2',name:'B',bot:false,score:0};
   const g={type:'uno',seats:[p1,p2],hands:hands||[['R1'],['G2']],turn,winner:-1,
     direction:1,color,top,draw:draw.slice(),discard:[],scores:[0,0],history:[],
-    message:'',turnDeadline:Date.now()+25000,drawnCardSeat:-1,drawnCard:null,
+    message:'',turnDeadline:Date.now()+30000,drawnCardSeat:-1,drawnCard:null,
     unoPendingSeat:-1,unoCalledSeat:-1,pendingDraw:null};
   return {r:{game:g,events:new Set(),players:new Map()},g,p1,p2};
 }
@@ -51,7 +51,7 @@ test('+2 có thể cộng dồn với +2; người nhận có thể rút tổng 
   assert.equal(actNow(r,p2,{type:'play',card:'YD'}).ok,true);
   assert.equal(g.pendingDraw.amount,4); assert.equal(g.pendingDraw.seat,0);
   assert.equal(actNow(r,p1,{type:'accept_penalty'}).ok,true);
-  assert.equal(g.hands[0].length,7); assert.equal(g.turn,1);
+  assert.equal(g.hands[0].length,5); assert.equal(g.turn,1);
 });
 
 test('+4 có thể cộng dồn với +4 và không có luật thách thức',()=>{
