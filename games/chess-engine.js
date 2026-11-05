@@ -531,6 +531,11 @@ var Chess = function(fen) {
       typeof options !== 'undefined' && 'legal' in options
         ? options.legal
         : true
+    /* In the free-check variant, a player may move a non-king piece while
+     * their king remains in check. The king itself must still move safely.
+     */
+    var allowCheck = typeof options !== 'undefined' && options.allowCheck === true
+    var wasInCheck = allowCheck && king_attacked(us)
 
     /* are we generating moves for a single square? */
     if (typeof options !== 'undefined' && 'square' in options) {
@@ -652,7 +657,7 @@ var Chess = function(fen) {
     var legal_moves = []
     for (var i = 0, len = moves.length; i < len; i++) {
       make_move(moves[i])
-      if (!king_attacked(us)) {
+      if (!king_attacked(us) || (wasInCheck && moves[i].piece !== KING)) {
         legal_moves.push(moves[i])
       }
       undo_move()
@@ -1647,7 +1652,9 @@ var Chess = function(fen) {
       if (typeof move === 'string') {
         move_obj = move_from_san(move, sloppy)
       } else if (typeof move === 'object') {
-        var moves = generate_moves()
+        var moves = generate_moves(
+          options && options.allowCheck === true ? { allowCheck: true } : undefined
+        )
 
         /* convert the pretty move object to an ugly move object */
         for (var i = 0, len = moves.length; i < len; i++) {
