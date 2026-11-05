@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { act, unoDeck } = require('../server');
+const { act, unoDeck, unoCardPoints } = require('../server');
 
 function fixture({hands,top='B3',color=top[0],draw=['R5','G6','Y7','B8'],turn=0}={}) {
   const p1={id:'p1',name:'A',bot:false,score:0};
@@ -72,4 +72,11 @@ test('báo UNO ngăn bị phạt; quên báo UNO có thể bị bắt và rút 2
   assert.equal(act(missed.r,missed.p1,{type:'play',card:'R1'}).ok,true);
   assert.equal(act(missed.r,missed.p2,{type:'catch_uno'}).ok,true);
   assert.equal(missed.g.hands[0].length,3);
+});
+
+test('điểm lá UNO theo luật truyền thống',()=>{
+  assert.equal(unoCardPoints('R7'),7);
+  assert.equal(unoCardPoints('YD'),20);
+  assert.equal(unoCardPoints('WS'),50);
+  assert.equal(unoCardPoints('WF'),50);
 });
