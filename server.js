@@ -228,6 +228,6 @@ const server=http.createServer(async(req,res)=>{
 });
 const cleanup=setInterval(()=>{const now=Date.now();for(const [code,r] of rooms){for(const [pid,p] of r.players)if(!p.connected&&!p.bot&&p.disconnectedAt&&now-p.disconnectedAt>LIMITS.grace&&!r.game){r.players.delete(pid);transferHost(r,pid);}if(!r.players.size&&r.emptyAt&&now-r.emptyAt>LIMITS.ttl){if(r.botTimer)clearTimeout(r.botTimer);if(r.effectTimer)clearTimeout(r.effectTimer);rooms.delete(code);}}},30000);
 cleanup.unref();
-function shutdown(){clearInterval(cleanup);for(const r of rooms.values()){if(r.botTimer)clearTimeout(r.botTimer);if(r.turnTimer)clearTimeout(r.turnTimer);if(r.effectTimer)clearTimeout(r.effectTimer);for(const e of r.events)e.res.end();}server.close(()=>process.exit(0));}
+function shutdown(){clearInterval(cleanup);for(const r of rooms.values()){if(r.botTimer)clearTimeout(r.botTimer);if(r.turnTimer)clearTimeout(r.turnTimer);if(r.effectTimer)clearTimeout(r.effectTimer);for(const e of r.events)e.res.end();}server.close(async()=>{try{await closeDatabase();}catch{}process.exit(0);});}
 if (require.main === module) { initDatabase().then(()=>{server.listen(PORT,()=>console.log(`Sam & UNO server listening on ${PORT}; persistent profiles: ${databaseEnabled()}`));}).catch(error=>{console.error('Database initialization failed:',error.message);process.exit(1);}); process.on('SIGTERM',shutdown); process.on('SIGINT',shutdown); }
 module.exports={samCombo,beats,canFinishSam,findSamMove,chooseUnoMove,endGame,publicState,rooms,server,act,unoDeck,unoCardPoints};
