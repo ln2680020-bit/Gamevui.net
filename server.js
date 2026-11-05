@@ -19,7 +19,7 @@ function publicState(r, token) {
   const g = r.game; if (!g) return { room: r.code, players: [...r.players.values()].map(p => ({ id: p.id, name: p.name, bot: p.bot, connected: p.connected, score: p.score || 0, wins:p.wins||0, games:p.games||0, streak:p.streak||0, bestStreak:p.bestStreak||0 })), game: null, chat: r.chat || [], emotes: r.emotes || [] };
   const me = playerFor(r, token); const i = me ? g.seats.findIndex(s => s.id === me.id) : -1;
   return { room: r.code, players: [...r.players.values()].map(p => ({ id: p.id, name: p.name, bot: p.bot, connected: p.connected, score: p.score || 0, wins:p.wins||0, games:p.games||0, streak:p.streak||0, bestStreak:p.bestStreak||0 })), chat: r.chat || [], emotes: r.emotes || [], game: {
-    type: g.type, names: g.seats.map(s => s.name), counts: g.hands.map(h => h.length), turn: g.turn, winner: g.winner,
+    type: g.type, names: g.seats.map(s => s.name), counts: g.hands.map(h => h.length), turn: g.turn, winner: g.winner, roundPoints:g.roundPoints||0,
     last: g.last, message: g.message, scores: g.scores, direction: g.direction, color: g.color, top: g.top,
     hand: i >= 0 ? g.hands[i] : [], mySeat: i, myTurn: i >= 0 && i === g.turn && g.winner < 0,
     samCalled: g.samCalled, passes: g.passes, history:g.history||[], turnDeadline:g.turnDeadline||0,
@@ -65,7 +65,8 @@ function startGame(r, type) {
   r.game=g;addHistory(g,`Bắt đầu ván ${type==='sam'?'Sâm':'UNO'}`,-1,'start');send(r); return true;
 }
 function addHistory(g,text,seat=-1,type='info'){g.history=g.history||[];g.history.push({text,seat,type,at:Date.now()});if(g.history.length>60)g.history.shift();}
-function endGame(g, winner) { if (!g || g.winner >= 0 || !g.seats[winner]) return; const player=g.seats[winner]; player.score=(player.score||0)+1;player.wins=(player.wins||0)+1;player.games=(player.games||0)+1;player.streak=(player.streak||0)+1;player.bestStreak=Math.max(player.bestStreak||0,player.streak);for(let i=0;i<g.seats.length;i++)if(i!==winner){g.seats[i].games=(g.seats[i].games||0)+1;g.seats[i].streak=0;} g.scores[winner]=player.score; g.winner=winner;g.turnDeadline=0; g.message=`${player.name} thắng ván! +1 điểm`;addHistory(g,`${player.name} chiến thắng và nhận 1 điểm`,winner,'winner'); }
+function unoCardPoints(card) { if(card[0]==='W') return 50; if(['S','V','D'].includes(card[1])) return 20; return Number(card[1])||0; }
+function endGame(g, winner) { if (!g || g.winner >= 0 || !g.seats[winner]) return; const player=g.seats[winner]; const points=g.type==='uno'?g.hands.reduce((sum,hand,index)=>sum+(index===winner?0:hand.reduce((n,card)=>n+unoCardPoints(card),0)),0):1; g.roundPoints=points; player.score=(player.score||0)+points;player.wins=(player.wins||0)+1;player.games=(player.games||0)+1;player.streak=(player.streak||0)+1;player.bestStreak=Math.max(player.bestStreak||0,player.streak);for(let i=0;i<g.seats.length;i++)if(i!==winner){g.seats[i].games=(g.seats[i].games||0)+1;g.seats[i].streak=0;} g.scores[winner]=player.score; g.winner=winner;g.turnDeadline=0; g.message=`${player.name} thắng ván! +${points} điểm`;addHistory(g,`${player.name} chiến thắng và nhận ${points} điểm`,winner,'winner'); }
 function drawCards(g, seat, count) {
   for (let n=0;n<count;n++) {
     if (!g.draw.length) {
@@ -194,4 +195,4 @@ const cleanup=setInterval(()=>{const now=Date.now();for(const [code,r] of rooms)
 cleanup.unref();
 function shutdown(){clearInterval(cleanup);for(const r of rooms.values()){if(r.botTimer)clearTimeout(r.botTimer);if(r.turnTimer)clearTimeout(r.turnTimer);for(const e of r.events)e.res.end();}server.close(()=>process.exit(0));}
 if (require.main === module) { server.listen(PORT,()=>console.log(`Sam & UNO server listening on ${PORT}`)); process.on('SIGTERM',shutdown); process.on('SIGINT',shutdown); }
-module.exports={samCombo,beats,canFinishSam,findSamMove,endGame,publicState,rooms,server,act,unoDeck};
+module.exports={samCombo,beats,canFinishSam,findSamMove,endGame,publicState,rooms,server,act,unoDeck,unoCardPoints};
