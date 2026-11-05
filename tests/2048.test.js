@@ -8,7 +8,7 @@ test('2048 gộp hai ô giống nhau một lần trong mỗi lượt',()=>{
   assert.deepEqual(E.slideLine([2,2,4,0]),{line:[4,4,0,0],score:4});
 });
 test('2048 không gộp dây chuyền trong cùng một lượt',()=>{
-  assert.deepEqual(E.slideLine([2,2,4,0]),{line:[4,4,0,0],score:4});
+  assert.deepEqual(E.slideLine([2,2,4,4]),{line:[4,8,0,0],score:12});
 });
 test('2048 di chuyển và gộp đúng theo bốn hướng',()=>{
   const board=[[2,2,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]];
