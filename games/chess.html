@@ -11,8 +11,8 @@ function onlineMode(){
  async function post(path,data={}){const response=await fetch('/api/'+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({room,token,...data})});const result=await response.json();if(!response.ok)throw new Error(result.error||'request_failed');return result;}
  function finishDialog(g,players){if(!g||(!g.draw&&g.winner<0))return;const key=String(g.moveCount)+':'+g.winner+':'+g.draw;if(key===lastResult)return;lastResult=key;$('result').textContent=g.draw?'Hòa ván!':(players[g.winner]?.name|| (g.winner===0?'Trắng':'Đen'))+' chiến thắng!';$('result-detail').textContent=g.reason||'Ván đấu đã kết thúc.';$('again').textContent='Về phòng chờ';$('overlay').classList.remove('hidden');}
  function renderBoard(g){
-  game=new window.Chess(g.fen);const el=$('board');el.innerHTML='';el.classList.toggle('flipped',g.turn===1);
-  const cells=game.board(),checked=game.in_check();let kingSquare='';
+  if(g.winner<0&&!g.draw)game=new window.Chess(g.fen);const el=$('board');el.innerHTML='';el.classList.toggle('flipped',g.turn===1);
+  const cells=g.board||game.board(),checked=g.winner<0&&!g.draw&&game.in_check();let kingSquare='';
   if(checked){for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(cells[r][c]?.type==='k'&&cells[r][c].color===game.turn())kingSquare=squareAt(r,c);}
   for(let r=0;r<8;r++)for(let c=0;c<8;c++){
    const sq=squareAt(r,c),piece=cells[r][c],button=document.createElement('button');
