@@ -41,13 +41,14 @@ test('+2 có thể cộng dồn với +2; người nhận có thể rút tổng 
 
 test('+4 có thể cộng dồn với +4 và không có luật thách thức',()=>{
   const {r,g,p1,p2}=fixture({hands:[['WF','R1'],['WF','G1']],top:'R3',color:'R',draw:['Y1','Y2','Y3','Y4','Y5','Y6','Y7','Y8']});
+  assert.equal(act(r,p1,{type:'uno'}).ok,true);
   assert.equal(act(r,p1,{type:'play',card:'WF',color:'G'}).ok,true);
   assert.equal(g.pendingDraw.amount,4);
   assert.equal(act(r,p2,{type:'play',card:'WF',color:'Y'}).ok,true);
   assert.equal(g.pendingDraw.amount,8); assert.equal(g.pendingDraw.seat,0);
   assert.equal(act(r,p1,{type:'challenge'}).error,'must_resolve_penalty');
   assert.equal(act(r,p1,{type:'accept_penalty'}).ok,true);
-  assert.equal(g.hands[0].length,11);
+  assert.equal(g.hands[0].length,9);
 });
 
 test('người có +2 không thể chồng lên hình phạt +4',()=>{
