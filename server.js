@@ -91,7 +91,7 @@ function act(r, p, command) {
     if(command.type==='catch_uno') {
       if(g.unoPendingSeat<0||g.unoCalledSeat===g.unoPendingSeat||i===g.unoPendingSeat) return {ok:false,error:'no_missed_uno'};
       drawCards(g,g.unoPendingSeat,2);
-      addHistory(g,`${g.seats[g.unoPendingSeat].name} quên báo UNO và bị phạt rút 2 lá`,g.unoPendingSeat,'penalty');
+      addHistory(g,`${g.seats[g.unoPendingSeat].name} quên báo UNO và bị phạt rút 2 lá`,g.unoPendingSeat,'penalty');g.history.at(-1).count=2;
       g.message=`${g.seats[g.unoPendingSeat].name} bị phạt 2 lá vì quên báo UNO`;
       g.unoPendingSeat=-1;g.unoCalledSeat=-1;delayTurn(r,g,g.turn);send(r);return {ok:true};
     }
@@ -104,7 +104,7 @@ function act(r, p, command) {
     // A missed UNO can be caught until the next player takes an action.
     if(g.unoPendingSeat>=0&&g.unoCalledSeat!==g.unoPendingSeat&&g.unoPendingSeat!==i) {
       drawCards(g,g.unoPendingSeat,2);
-      addHistory(g,`${g.seats[g.unoPendingSeat].name} quên báo UNO và bị phạt rút 2 lá`,g.unoPendingSeat,'penalty');
+      addHistory(g,`${g.seats[g.unoPendingSeat].name} quên báo UNO và bị phạt rút 2 lá`,g.unoPendingSeat,'penalty');g.history.at(-1).count=2;
       g.unoPendingSeat=-1;g.unoCalledSeat=-1;
     } else if(g.unoPendingSeat>=0&&g.unoCalledSeat===g.unoPendingSeat&&g.unoPendingSeat!==i) {
       g.unoPendingSeat=-1;g.unoCalledSeat=-1;
@@ -122,18 +122,18 @@ function act(r, p, command) {
         for(const c of cards)h.splice(h.indexOf(c),1);
         g.discard.push(g.top);g.top=card;g.color=card[0]==='W'&&'RGBY'.includes(command.color)?command.color:card[0];
         pd.amount+=card[1]==='D'?2:4;pd.type=card[1];pd.offender=i;pd.seat=(i+g.direction+g.seats.length)%g.seats.length;
-        g.drawnCardSeat=-1;g.drawnCard=null;addHistory(g,`${p.name} chồng ${card} · tổng phạt ${pd.amount} lá`,i,'play');
+        g.drawnCardSeat=-1;g.drawnCard=null;addHistory(g,`${p.name} chồng ${card} · tổng phạt ${pd.amount} lá`,i,'play');g.history.at(-1).card=card;
         if(!h.length){g.pendingDraw=null;endGame(g,i);}else{g.message=`Cộng dồn ${pd.amount} lá phạt!`;delayNextTurn(r,g);}return {ok:true};
       }
       if(command.type!=='accept_penalty') return {ok:false,error:'must_resolve_penalty'};
-      drawCards(g,i,pd.amount);addHistory(g,`${p.name} rút ${pd.amount} lá phạt`,i,'penalty');
+      const beforePenalty=g.hands[i].length;drawCards(g,i,pd.amount);addHistory(g,`${p.name} rút ${pd.amount} lá phạt`,i,'penalty');g.history.at(-1).count=pd.amount;
       g.pendingDraw=null;g.message=`${p.name} rút ${pd.amount} lá phạt và mất lượt`;delayNextTurn(r,g);return {ok:true};
     }
     if(command.type==='draw') {
       if(g.drawnCardSeat===i) return {ok:false,error:'already_drew'};
       drawCards(g,i,1);
       const drawn=g.hands[i][g.hands[i].length-1];
-      addHistory(g,`${p.name} bốc 1 lá`,i,'draw');
+      addHistory(g,`${p.name} bốc 1 lá`,i,'draw');g.history.at(-1).card=drawn;
       if(drawn&&unoCanPlay(drawn,g)) {g.drawnCardSeat=i;g.drawnCard=drawn;g.message='Lá vừa rút có thể đánh: bạn được chọn đánh hoặc bỏ lượt.';}
       else {g.drawnCardSeat=-1;g.drawnCard=null;g.message='Lá vừa rút không đánh được; lượt chuyển tiếp.';}
       delayNextTurn(r,g,g.drawnCardSeat===i?0:1);return {ok:true};
@@ -153,7 +153,7 @@ function act(r, p, command) {
     for(const c of cards)h.splice(h.indexOf(c),1);g.discard.push(g.top);g.top=card;
     g.color=card[0]==='W'&&'RGBY'.includes(command.color)?command.color:card[0];
     g.drawnCardSeat=-1;g.drawnCard=null;
-    addHistory(g,`${p.name} đánh ${card}`,i,'play');
+    addHistory(g,`${p.name} đánh ${card}`,i,'play');g.history.at(-1).card=card;
     if(h.length===1){g.unoPendingSeat=i;if(g.unoCalledSeat!==i)g.unoCalledSeat=-1;}
     else if(h.length===0){g.unoPendingSeat=-1;g.unoCalledSeat=-1;}
     let steps=1;const next=(i+g.direction+g.seats.length)%g.seats.length,v=card[1];
