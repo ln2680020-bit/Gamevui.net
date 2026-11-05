@@ -15,20 +15,42 @@
     while(out.length<SIZE)out.push(0);
     return {line:out,score};
   }
+  function coordinate(direction,line,index){
+    if(direction==='left')return {row:line,col:index};
+    if(direction==='right')return {row:line,col:SIZE-1-index};
+    if(direction==='up')return {row:index,col:line};
+    return {row:SIZE-1-index,col:line};
+  }
   function moveBoard(board,direction){
-    const next=cloneBoard(board);let score=0;
-    for(let n=0;n<SIZE;n++){
-      let line=[];
-      if(direction==='left'||direction==='right')line=next[n].slice();
-      else for(let r=0;r<SIZE;r++)line.push(next[r][n]);
-      if(direction==='right'||direction==='down')line.reverse();
-      const result=slideLine(line);score+=result.score;line=result.line;
-      if(direction==='right'||direction==='down')line.reverse();
-      if(direction==='left'||direction==='right')next[n]=line;
-      else for(let r=0;r<SIZE;r++)next[r][n]=line[r];
+    if(!['left','right','up','down'].includes(direction))throw new Error('Hướng di chuyển không hợp lệ');
+    const next=emptyBoard(),moves=[],merges=[];let score=0;
+    for(let lineIndex=0;lineIndex<SIZE;lineIndex++){
+      const entries=[];
+      for(let i=0;i<SIZE;i++){
+        const pos=coordinate(direction,lineIndex,i),value=board[pos.row][pos.col];
+        if(value)entries.push({value,from:pos});
+      }
+      let source=0,destination=0;
+      while(source<entries.length){
+        const first=entries[source],second=entries[source+1];
+        const target=coordinate(direction,lineIndex,destination);
+        if(second&&first.value===second.value){
+          const value=first.value*2;
+          next[target.row][target.col]=value;score+=value;
+          moves.push({from:first.from,to:target,value,merged:true});
+          moves.push({from:second.from,to:target,value:second.value,merged:true});
+          merges.push({at:target,value});
+          source+=2;
+        }else{
+          next[target.row][target.col]=first.value;
+          moves.push({from:first.from,to:target,value:first.value,merged:false});
+          source++;
+        }
+        destination++;
+      }
     }
     const moved=next.some((row,r)=>row.some((value,c)=>value!==board[r][c]));
-    return {board:next,score,moved};
+    return {board:next,score,moved,moves,merges};
   }
   function spawnTile(board,random=Math.random){
     const empty=[];
