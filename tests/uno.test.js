@@ -6,7 +6,7 @@ const { act, unoDeck, unoCardPoints, endGame } = require('../server');
 // Tests run actions back-to-back, so resolve the 3-second visual lock immediately.
 // The dedicated server.test.js case verifies that the real lock is enforced.
 function actNow(r,p,command) {
-  const result=actNow(r,p,command);
+  const result=act(r,p,command);
   if(r.effectTimer){clearTimeout(r.effectTimer);r.effectTimer=null;}
   const g=r.game;
   if(g&&g.pendingTurn!==undefined){
