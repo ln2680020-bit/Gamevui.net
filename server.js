@@ -103,7 +103,7 @@ function act(r, p, command) {
       drawCards(g,g.unoPendingSeat,2);
       addHistory(g,`${g.seats[g.unoPendingSeat].name} quên báo UNO và bị phạt rút 2 lá`,g.unoPendingSeat,'penalty');
       g.unoPendingSeat=-1;g.unoCalledSeat=-1;
-    } else if(g.unoPendingSeat>=0&&g.unoCalledSeat===g.unoPendingSeat) {
+    } else if(g.unoPendingSeat>=0&&g.unoCalledSeat===g.unoPendingSeat&&g.unoPendingSeat!==i) {
       g.unoPendingSeat=-1;g.unoCalledSeat=-1;
     }
     if(g.pendingDraw) {
