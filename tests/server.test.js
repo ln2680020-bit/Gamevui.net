@@ -44,3 +44,5 @@ test('thời gian giữ chỗ khi mất kết nối là 120 giây',()=>assert.eq
 
 test('Voice Chat chỉ trả STUN công khai khi chưa cấu hình TURN',()=>{const servers=voiceIceServers('ROOM1',{id:'player1'},1700000000000,{});assert.deepEqual(servers,[{urls:['stun:stun.l.google.com:19302']}]);});
 test('TURN dùng thông tin xác thực tạm thời ký bằng secret máy chủ',()=>{const servers=voiceIceServers('ROOM1',{id:'player1'},1700000000000,{TURN_URLS:'turn:relay.example:3478?transport=udp,turns:relay.example:5349',TURN_SECRET:'test-secret'});assert.equal(servers.length,2);assert.deepEqual(servers[1].urls,['turn:relay.example:3478?transport=udp','turns:relay.example:5349']);assert.match(servers[1].username,/^1700003600:ROOM1:player1$/);assert.ok(servers[1].credential.length>10);});
+
+test('Game Hub preserves the selected game type in room state',()=>{const a={id:'a',token:'ta',name:'A'};const r={code:'uno-room',gameType:'uno',hostId:'a',isPrivate:true,players:new Map([['a',a]]),game:null};const state=publicState(r,'ta');assert.equal(state.gameType,'uno');assert.equal(state.isHost,true);});
