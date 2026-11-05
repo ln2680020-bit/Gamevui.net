@@ -126,7 +126,7 @@ function act(r, p, command) {
         if(!h.length){g.pendingDraw=null;endGame(g,i);}else{g.message=`Cộng dồn ${pd.amount} lá phạt!`;delayNextTurn(r,g);}return {ok:true};
       }
       if(command.type!=='accept_penalty') return {ok:false,error:'must_resolve_penalty'};
-      const beforePenalty=g.hands[i].length;drawCards(g,i,pd.amount);addHistory(g,`${p.name} rút ${pd.amount} lá phạt`,i,'penalty');g.history.at(-1).count=pd.amount;
+      drawCards(g,i,pd.amount);addHistory(g,`${p.name} rút ${pd.amount} lá phạt`,i,'penalty');g.history.at(-1).count=pd.amount;
       g.pendingDraw=null;g.message=`${p.name} rút ${pd.amount} lá phạt và mất lượt`;delayNextTurn(r,g);return {ok:true};
     }
     if(command.type==='draw') {
