@@ -1,252 +1,82 @@
 'use strict';
 
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
-const crypto = require('crypto');
+const http = require('node:http');
+const fs = require('node:fs');
+const path = require('node:path');
+const crypto = require('node:crypto');
 
 const PORT = Number(process.env.PORT || 3000);
 const rooms = new Map();
-
-const LIMITS = {
-  roomCode: 20,
-  playerId: 40,
-  playerName: 32,
-  maxRooms: 2000,
-  maxPlayersPerRoom: 12,
-  maxPresenceBytes: 16384,
-  disconnectGraceMs: 15000,
-  heartbeatMs: 20000,
-  emptyRoomTtlMs: 5 * 60 * 1000
-};
-
-function json(res, status, value) {
-  res.writeHead(status, {
-    'Content-Type': 'application/json; charset=utf-8',
-    'Cache-Control': 'no-store'
-  });
-  res.end(JSON.stringify(value));
+const LIMITS = { roomCode: 20, name: 24, maxRooms: 1000, maxPlayers: 6, body: 8192, grace: 30000, ttl: 300000 };
+const id = () => crypto.randomBytes(18).toString('hex');
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = crypto.randomInt(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const validCode = s => typeof s === 'string' && s.length > 0 && s.length <= LIMITS.roomCode && /^[a-zA-Z0-9_-]+$/.test(s);
+const json = (res, status, data) => { res.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }); res.end(JSON.stringify(data)); };
+function readBody(req) { return new Promise((resolve, reject) => { let data = ''; req.on('data', c => { data += c; if (Buffer.byteLength(data) > LIMITS.body) { reject(new Error('too_large')); req.destroy(); } }); req.on('end', () => { try { resolve(JSON.parse(data || '{}')); } catch { reject(new Error('bad_json')); } }); req.on('error', reject); }); }
+function roomFor(code, create = false) { let r = rooms.get(code); if (!r && create && rooms.size < LIMITS.maxRooms) { r = { code, players: new Map(), game: null, events: new Set(), emptyAt: null }; rooms.set(code, r); } return r; }
+function playerFor(r, token) { for (const p of r.players.values()) if (p.token === token) return p; return null; }
+function publicState(r, token) {
+  const g = r.game; if (!g) return { room: r.code, players: [...r.players.values()].map(p => ({ id: p.id, name: p.name, bot: p.bot, connected: p.connected })), game: null };
+  const me = playerFor(r, token); const i = me ? g.seats.findIndex(s => s.id === me.id) : -1;
+  return { room: r.code, players: [...r.players.values()].map(p => ({ id: p.id, name: p.name, bot: p.bot, connected: p.connected })), game: {
+    type: g.type, names: g.seats.map(s => s.name), counts: g.hands.map(h => h.length), turn: g.turn, winner: g.winner,
+    last: g.last, message: g.message, scores: g.scores, direction: g.direction, color: g.color, top: g.top,
+    hand: i >= 0 ? g.hands[i] : [], mySeat: i, myTurn: i >= 0 && i === g.turn && g.winner < 0,
+    samCalled: g.samCalled, passes: g.passes
+  } };
 }
-
-function validCode(value) {
-  return typeof value === 'string' &&
-    value.length > 0 &&
-    value.length <= LIMITS.roomCode &&
-    /^[a-zA-Z0-9_-]+$/.test(value);
+function send(r) { for (const entry of r.events) { const p = playerFor(r, entry.token); if (!p || !entry.res.writable || entry.res.destroyed) continue; try { entry.res.write(`data: ${JSON.stringify(publicState(r, entry.token))}\n\n`); } catch {} } }
+function nextTurn(g, steps = 1) { const n = g.seats.length; g.turn = (g.turn + g.direction * steps % n + n) % n; }
+function makeSamDeck() { const d = []; for (let rank = 3; rank <= 15; rank++) for (let suit = 0; suit < 4; suit++) d.push(rank * 4 + suit); return shuffle(d); }
+function samCombo(cards) { if (!Array.isArray(cards) || !cards.length) return null; const ranks = cards.map(c => c >> 2).sort((a,b) => a-b); if (ranks.every(x => x === ranks[0])) return { kind: 'set', size: ranks.length, high: ranks[0] }; if (ranks.length >= 3 && ranks[ranks.length-1] < 15 && ranks.every((x,i) => i === 0 || x === ranks[i-1] + 1)) return { kind: 'run', size: ranks.length, high: ranks.at(-1) }; return null; }
+function beats(a,b) { return !b || (a.kind === b.kind && a.size === b.size && a.high > b.high) || (a.kind === 'set' && a.size === 4 && b.kind === 'set' && b.size === 1 && b.high === 15); }
+function unoDeck() { const d=[]; for (const c of 'RGBY') { d.push(c+'0'); for (let n=1;n<=9;n++) d.push(c+n,c+n); for (const v of ['S','V','D']) d.push(c+v,c+v); } for(let i=0;i<4;i++) d.push('WW','WF'); return shuffle(d); }
+function startGame(r, type) {
+  const seats = [...r.players.values()].filter(p => p.connected || p.bot).slice(0, type === 'sam' ? 5 : 6);
+  if (seats.length < 2) return false;
+  const g = { type, seats, hands: [], turn: 0, winner: -1, last: [], message: '', scores: seats.map(p => p.score || 0), direction: 1, color: '', top: '', samCalled: -1, passes: [], draw: [], discard: [] };
+  if (type === 'sam') { const d = makeSamDeck(); g.hands = seats.map((_,i)=>d.slice(i*10,i*10+10).sort((a,b)=>a-b)); }
+  else { const d=unoDeck(); g.hands=seats.map(()=>d.splice(0,7)); g.draw=d; g.top=g.draw.pop(); while(g.top[0]==='W'){g.draw.unshift(g.top);g.top=g.draw.pop();} g.color=g.top[0]; }
+  r.game=g; send(r); return true;
 }
-
-function validId(value) {
-  return typeof value === 'string' &&
-    value.length > 0 &&
-    value.length <= LIMITS.playerId &&
-    /^[a-zA-Z0-9_-]+$/.test(value);
+function endGame(g, winner) { g.winner=winner; g.message=`${g.seats[winner].name} thắng ván!`; }
+function act(r, p, command) {
+  const g=r.game; if(!g || g.winner>=0) return {ok:false,error:'no_active_game'};
+  const i=g.seats.findIndex(s=>s.id===p.id); if(i<0 || i!==g.turn) return {ok:false,error:'not_your_turn'};
+  if(g.type==='sam') {
+    if(command.type==='call_sam') { if(g.last.length || g.samCalled>=0) return {ok:false,error:'cannot_call_sam'}; g.samCalled=i; g.message=`${p.name} báo Sâm!`; send(r); return {ok:true}; }
+    if(command.type==='pass') { if(!g.last.length) return {ok:false,error:'cannot_pass'}; g.passes.push(i); nextTurn(g); if(g.passes.length>=g.seats.length-1){g.last=[];g.passes=[];g.turn=(g.seats.findIndex(s=>s.id===g.seats.find(x=>x.id===g.lastPlayer)?.id)+g.seats.length)%g.seats.length;} return {ok:true}; }
+    if(command.type!=='play' || !Array.isArray(command.cards) || !command.cards.length || command.cards.length>10) return {ok:false,error:'invalid_move'};
+    const hand=g.hands[i]; if(new Set(command.cards).size!==command.cards.length || !command.cards.every(c=>hand.includes(c))) return {ok:false,error:'cards_not_in_hand'};
+    const combo=samCombo(command.cards); if(!combo || !beats(combo,g.lastCombo)) return {ok:false,error:'invalid_combo'};
+    g.hands[i]=hand.filter(c=>!command.cards.includes(c)); g.last=[...command.cards].sort((a,b)=>a-b); g.lastCombo=combo; g.lastPlayer=i; g.passes=[]; g.message=`${p.name} đã đánh bài`;
+    if(!g.hands[i].length) endGame(g,i); else nextTurn(g); return {ok:true};
+  }
+  if(command.type==='draw') { if(!g.draw.length){g.draw=shuffle(g.discard.splice(0));} if(g.draw.length) g.hands[i].push(g.draw.pop()); nextTurn(g); return {ok:true}; }
+  if(command.type!=='play' || typeof command.card!=='string') return {ok:false,error:'invalid_move'};
+  const h=g.hands[i], at=h.indexOf(command.card), card=command.card; if(at<0) return {ok:false,error:'card_not_in_hand'};
+  const playable=card[0]==='W'||card[0]===g.color||card[1]===g.top[1]; if(!playable) return {ok:false,error:'card_not_playable'};
+  h.splice(at,1); g.discard.push(g.top); g.top=card; g.color=card[0]==='W' && 'RGBY'.includes(command.color)?command.color:card[0];
+  let steps=1; const v=card[1], next=(g.turn+g.direction+g.seats.length)%g.seats.length;
+  if(v==='V'){if(g.seats.length===2) steps=2; else g.direction*=-1;} else if(v==='S') steps=2; else if(v==='D'||v==='F'){const count=v==='D'?2:4; for(let k=0;k<count;k++){if(!g.draw.length)g.draw=shuffle(g.discard.splice(0));if(g.draw.length)g.hands[next].push(g.draw.pop());}steps=2;}
+  if(!h.length) endGame(g,i); else nextTurn(g,steps); return {ok:true};
 }
-
-function cleanPresence(presence) {
-  const result = {};
-  if (presence && typeof presence.name === 'string') {
-    result.name = presence.name.trim().slice(0, LIMITS.playerName);
-  }
-  // Preserve the existing game payload format for compatibility.
-  // The game state is still client-published in this phase; server authority
-  // is intentionally implemented in a later phase.
-  if (presence && Object.prototype.hasOwnProperty.call(presence, 'g')) {
-    result.g = presence.g;
-  }
-  if (presence && presence.cmd && typeof presence.cmd === 'object') {
-    result.cmd = presence.cmd;
-  }
-  return result;
-}
-
-function getRoom(code, create = false) {
-  let room = rooms.get(code);
-  if (!room && create) {
-    if (rooms.size >= LIMITS.maxRooms) return null;
-    room = { players: new Map(), createdAt: Date.now(), emptyAt: null };
-    rooms.set(code, room);
-  }
-  return room;
-}
-
-function snapshot(room) {
-  return [...room.players.entries()].map(([id, player]) => ({
-    peer: id,
-    presence: player.presence
-  }));
-}
-
-function broadcast(code) {
-  const room = rooms.get(code);
-  if (!room) return;
-  const message = `data: ${JSON.stringify(snapshot(room))}\n\n`;
-  for (const player of room.players.values()) {
-    if (!player.res || player.res.destroyed || player.res.writableEnded) continue;
-    try {
-      player.res.write(message);
-    } catch (_) {
-      // A disconnected client is removed by its close handler.
-    }
-  }
-}
-
-function removePlayer(code, id, expectedPlayer) {
-  const room = rooms.get(code);
-  if (!room || room.players.get(id) !== expectedPlayer) return;
-  room.players.delete(id);
-  if (room.players.size === 0) {
-    room.emptyAt = Date.now();
-  }
-  broadcast(code);
-}
-
-function readBody(req, maxBytes) {
-  return new Promise((resolve, reject) => {
-    let body = '';
-    req.on('data', chunk => {
-      body += chunk;
-      if (Buffer.byteLength(body) > maxBytes) {
-        reject(new Error('body_too_large'));
-        req.destroy();
-      }
-    });
-    req.on('end', () => resolve(body));
-    req.on('error', reject);
-  });
-}
-
-const server = http.createServer(async (req, res) => {
-  const url = new URL(req.url, 'http://localhost');
-
-  if (req.method === 'GET' && url.pathname === '/health') {
-    return json(res, 200, {
-      ok: true,
-      service: 'sam-uno',
-      rooms: rooms.size,
-      uptimeSeconds: Math.floor(process.uptime())
-    });
-  }
-
-  if (req.method === 'GET' && url.pathname === '/') {
-    res.writeHead(200, {
-      'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': 'no-cache'
-    });
-    return res.end(fs.readFileSync(path.join(__dirname, 'index.html')));
-  }
-
-  if (req.method === 'GET' && url.pathname === '/events') {
-    const code = url.searchParams.get('room') || '';
-    const id = url.searchParams.get('id') || '';
-    if (!validCode(code) || !validId(id)) {
-      return json(res, 400, { ok: false, error: 'invalid_room_or_player_id' });
-    }
-
-    const room = getRoom(code, true);
-    if (!room) return json(res, 503, { ok: false, error: 'room_capacity_reached' });
-
-    const existing = room.players.get(id);
-    if (!existing && room.players.size >= LIMITS.maxPlayersPerRoom) {
-      return json(res, 409, { ok: false, error: 'room_is_full' });
-    }
-
-    res.writeHead(200, {
-      'Content-Type': 'text/event-stream; charset=utf-8',
-      'Cache-Control': 'no-cache, no-transform',
-      'Connection': 'keep-alive',
-      'X-Accel-Buffering': 'no'
-    });
-    res.write('retry: 1500\n\n');
-
-    if (existing && existing.res && existing.res !== res) {
-      try { existing.res.end(); } catch (_) {}
-    }
-
-    const player = {
-      presence: existing ? existing.presence : {},
-      res,
-      connectedAt: Date.now()
-    };
-    room.players.set(id, player);
-    room.emptyAt = null;
-
-    const keepAlive = setInterval(() => {
-      if (!res.destroyed && !res.writableEnded) {
-        try { res.write(': keep-alive\n\n'); } catch (_) {}
-      }
-    }, LIMITS.heartbeatMs);
-
-    res.on('close', () => {
-      clearInterval(keepAlive);
-      // Grace period prevents brief network drops from instantly removing
-      // a player. Reconnecting with the same id replaces this player object.
-      setTimeout(() => removePlayer(code, id, player), LIMITS.disconnectGraceMs);
-    });
-
-    broadcast(code);
-    return;
-  }
-
-  if (req.method === 'POST' && url.pathname === '/presence') {
-    try {
-      const raw = await readBody(req, LIMITS.maxPresenceBytes);
-      const data = JSON.parse(raw);
-      const code = data.room;
-      const id = data.id;
-      if (!validCode(code) || !validId(id) ||
-          !data.patch || typeof data.patch !== 'object' || Array.isArray(data.patch)) {
-        return json(res, 400, { ok: false, error: 'invalid_presence_payload' });
-      }
-
-      const room = getRoom(code, false);
-      const player = room && room.players.get(id);
-      if (!player) return json(res, 404, { ok: false, error: 'player_not_connected' });
-
-      const patch = cleanPresence(data.patch);
-      for (const [key, value] of Object.entries(patch)) {
-        if (value === null) delete player.presence[key];
-        else player.presence[key] = value;
-      }
-      broadcast(code);
-      return json(res, 200, { ok: true });
-    } catch (error) {
-      if (!res.headersSent) {
-        return json(res, error.message === 'body_too_large' ? 413 : 400, {
-          ok: false,
-          error: 'invalid_request'
-        });
-      }
-    }
-  }
-
-  return json(res, 404, { ok: false, error: 'not_found' });
+function botMove(r) { const g=r.game; if(!g||g.winner>=0)return; const p=g.seats[g.turn]; if(!p.bot)return; const h=g.hands[g.turn]; if(g.type==='sam'){const sorted=h.slice().sort((a,b)=>(a>>2)-(b>>2)); let cards=sorted.length? [sorted[0]]:[]; if(g.lastCombo){const found=sorted.find(c=>(c>>2)>g.lastCombo.high); if(found!==undefined)cards=[found]; else {act(r,p,{type:'pass'});send(r);return;}} act(r,p,{type:'play',cards});} else {const k=h.find(c=>c[0]==='W'||c[0]===g.color||c[1]===g.top[1]); if(k)act(r,p,{type:'play',card:k,color:'G'}); else act(r,p,{type:'draw'});} send(r); }
+function scheduleBot(r) { if(r.botTimer)clearTimeout(r.botTimer); const g=r.game; if(g&&g.winner<0&&(g.seats[g.turn]?.bot||!g.seats[g.turn]?.connected))r.botTimer=setTimeout(()=>{botMove(r);scheduleBot(r);},700); }
+const server=http.createServer(async(req,res)=>{
+  const url=new URL(req.url,'http://localhost');
+  if(req.method==='GET'&&url.pathname==='/health')return json(res,200,{ok:true,service:'sam-uno',rooms:rooms.size,uptimeSeconds:Math.floor(process.uptime())});
+  if(req.method==='GET'&&url.pathname==='/') { try {res.writeHead(200,{'content-type':'text/html; charset=utf-8','cache-control':'no-cache'});return res.end(fs.readFileSync(path.join(__dirname,'index.html')));} catch{return json(res,500,{ok:false,error:'index_missing'});} }
+  if(req.method==='POST'&&url.pathname==='/api/join') { try {const d=await readBody(req); if(!validCode(d.room||'chung'))return json(res,400,{ok:false,error:'invalid_room'}); const r=roomFor(d.room||'chung',true);if(!r)return json(res,503,{ok:false,error:'room_limit'});let p=d.token&&playerFor(r,d.token); if(!p){if(r.players.size>=LIMITS.maxPlayers)return json(res,409,{ok:false,error:'room_full'});p={id:id(),token:id(),name:String(d.name||'Người chơi').trim().slice(0,LIMITS.name)||'Người chơi',connected:true,bot:false,score:0,res:null};r.players.set(p.id,p);}else{p.connected=true;p.disconnectedAt=null;p.name=String(d.name||p.name).trim().slice(0,LIMITS.name)||p.name;}r.emptyAt=null;json(res,200,{ok:true,token:p.token,id:p.id,state:publicState(r,p.token)});send(r);return;}catch{return json(res,400,{ok:false,error:'invalid_request'});} }
+  if(req.method==='GET'&&url.pathname==='/api/events') {const code=url.searchParams.get('room'),token=url.searchParams.get('token'),r=roomFor(code,false),p=r&&playerFor(r,token);if(!p)return json(res,401,{ok:false,error:'unauthorized'});res.writeHead(200,{'content-type':'text/event-stream; charset=utf-8','cache-control':'no-cache, no-transform','connection':'keep-alive','x-accel-buffering':'no'});res.write('retry: 2000\n\n');const entry={token,res};r.events.add(entry);p.res=res;p.connected=true;p.disconnectedAt=null;res.write(`data: ${JSON.stringify(publicState(r,token))}\n\n`);const timer=setInterval(()=>{if(!res.destroyed)res.write(': ping\n\n');},20000);res.on('close',()=>{clearInterval(timer);r.events.delete(entry);if(p.res===res){p.res=null;p.connected=false;p.disconnectedAt=Date.now();setTimeout(()=>{if(!p.connected&&p.disconnectedAt&&Date.now()-p.disconnectedAt>=LIMITS.grace){if(!r.game||r.game.winner>=0)r.players.delete(p.id);if(!r.players.size)r.emptyAt=Date.now();send(r);}},LIMITS.grace);send(r);scheduleBot(r);}});return; }
+  if(req.method==='POST'&&url.pathname==='/api/action') {try{const d=await readBody(req),r=roomFor(d.room,false),p=r&&playerFor(r,d.token);if(!p)return json(res,401,{ok:false,error:'unauthorized'});const result=act(r,p,d.command||{});if(result.ok){send(r);scheduleBot(r);}return json(res,result.ok?200:400,result);}catch{return json(res,400,{ok:false,error:'invalid_request'});} }
+  if(req.method==='POST'&&url.pathname==='/api/start') {try{const d=await readBody(req),r=roomFor(d.room,false),p=r&&playerFor(r,d.token);if(!p)return json(res,401,{ok:false,error:'unauthorized'});if(r.game&&r.game.winner<0)return json(res,409,{ok:false,error:'game_in_progress'});const type=d.game==='uno'?'uno':'sam';if(!startGame(r,type))return json(res,400,{ok:false,error:'need_two_players'});scheduleBot(r);return json(res,200,{ok:true});}catch{return json(res,400,{ok:false,error:'invalid_request'});} }
+  if(req.method==='POST'&&url.pathname==='/api/bot') {try{const d=await readBody(req),r=roomFor(d.room,false),p=r&&playerFor(r,d.token);if(!p)return json(res,401,{ok:false,error:'unauthorized'});if(r.players.size>=LIMITS.maxPlayers)return json(res,409,{ok:false,error:'room_full'});const bot={id:id(),token:id(),name:`Bot ${[...r.players.values()].filter(x=>x.bot).length+1}`,connected:true,bot:true,score:0};r.players.set(bot.id,bot);send(r);return json(res,200,{ok:true});}catch{return json(res,400,{ok:false,error:'invalid_request'});} }
+  if(req.method==='POST'&&url.pathname==='/api/lobby') {try{const d=await readBody(req),r=roomFor(d.room,false),p=r&&playerFor(r,d.token);if(!p)return json(res,401,{ok:false,error:'unauthorized'});r.game=null;send(r);return json(res,200,{ok:true});}catch{return json(res,400,{ok:false,error:'invalid_request'});} }
+  return json(res,404,{ok:false,error:'not_found'});
 });
-
-// Remove empty rooms after a short TTL so the in-memory map does not grow forever.
-const cleanup = setInterval(() => {
-  const now = Date.now();
-  for (const [code, room] of rooms) {
-    if (room.players.size === 0 && room.emptyAt &&
-        now - room.emptyAt >= LIMITS.emptyRoomTtlMs) {
-      rooms.delete(code);
-    }
-  }
-}, 60000);
-
-server.listen(PORT, () => {
-  console.log(`Sam & UNO server listening on port ${PORT}`);
-});
-
-function shutdown() {
-  clearInterval(cleanup);
-  for (const room of rooms.values()) {
-    for (const player of room.players.values()) {
-      try { player.res.end(); } catch (_) {}
-    }
-  }
-  server.close(() => process.exit(0));
-  setTimeout(() => process.exit(1), 5000).unref();
-}
-
-process.on('SIGTERM', shutdown);
-process.on('SIGINT', shutdown);
+const cleanup=setInterval(()=>{const now=Date.now();for(const [code,r] of rooms){for(const [pid,p] of r.players)if(!p.connected&&!p.bot&&p.disconnectedAt&&now-p.disconnectedAt>LIMITS.grace&&!r.game)r.players.delete(pid);if(!r.players.size&&r.emptyAt&&now-r.emptyAt>LIMITS.ttl){if(r.botTimer)clearTimeout(r.botTimer);rooms.delete(code);}}},30000);
+cleanup.unref();
+function shutdown(){clearInterval(cleanup);for(const r of rooms.values()){if(r.botTimer)clearTimeout(r.botTimer);for(const e of r.events)e.res.end();}server.close(()=>process.exit(0));}
+if (require.main === module) { server.listen(PORT,()=>console.log(`Sam & UNO server listening on ${PORT}`)); process.on('SIGTERM',shutdown); process.on('SIGINT',shutdown); }
+module.exports={samCombo,beats,publicState,rooms,server};
