@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sâm & UNO</title>
+<style>
+:root{box-sizing:border-box;--bg:#f2f5f0;--fg:#16231a;--pn:#ffffffcc;--ft:#2e7d4f;--bd:#0003;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1a13;--fg:#e8f1ea;--pn:#1b2a20cc;--ft:#1d5a38;--bd:#fff3}}
+:root[data-theme="dark"]{--bg:#0f1a13;--fg:#e8f1ea;--pn:#1b2a20cc;--ft:#1d5a38;--bd:#fff3}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh}
+main{max-width:900px;margin:0 auto;padding:12px}
+h1{font-size:22px;margin:4px 0 8px}
+.pn{background:var(--pn);border:1px solid var(--bd);border-radius:14px;padding:12px;margin:10px 0}
+input,button{font:inherit;padding:10px 14px;border-radius:10px;border:1px solid var(--bd);background:var(--pn);color:var(--fg)}
+button{cursor:pointer;background:#2e7d4f;color:#fff;border:0;font-weight:600}
+button:disabled{opacity:.4;cursor:default}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+.felt{background:var(--ft);border-radius:18px;padding:14px;min-height:150px;display:flex;gap:8px;justify-content:center;align-items:center;color:#fff;flex-wrap:wrap;text-align:center}
+.hand{display:flex;overflow-x:auto;padding:26px 8px 6px}
+.c{flex:none;width:54px;height:78px;margin-right:-14px;border-radius:8px;background:#fff;color:#111;border:1px solid #0005;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700;font-size:18px;cursor:pointer;transition:transform .1s;user-select:none}
+.hand .c:last-child{margin-right:0}
+.c.r{color:#d32f2f}.c.up{transform:translateY(-18px)}
+.felt .c{margin:0;width:62px;height:90px;cursor:default}
+.u{color:#fff;text-shadow:0 1px 2px #0006}
+.R{background:#e53935}.G{background:#43a047}.B{background:#1e88e5}.Y{background:#fdd835;color:#222;text-shadow:none}.W{background:#222}
+.dim{opacity:.35}
+.seat{padding:6px 12px;border-radius:12px;background:var(--pn);border:1px solid var(--bd)}
+.turn{outline:3px solid #ffd54f}
+.cb{width:48px;height:48px;border-radius:50%}
+.big{font-size:20px;font-weight:700}
+.muted{opacity:.7;font-size:14px}
+</style>
+</head>
+<body>
+<main><h1>🃏 Sâm &amp; UNO</h1><div id="app"></div></main>
+<script>
+const $=s=>document.querySelector(s);
+const E=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const sh=a=>{for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+let R=null,nb=0,peers=[],G=null,DK=[],DS=[],sel=new Set(),wild=null,seq=0,lastN={},err='';
+const me=()=>(peers.find(p=>p.sameTab)||{}).peer;
+function connect(code,on){const id=Math.random().toString(36).slice(2,12)+Date.now().toString(36);let mine={};
+  const post=patch=>fetch('/presence',{method:'POST',body:JSON.stringify({room:code,id,patch})}).catch(()=>{});
+  const es=new EventSource('/events?room='+encodeURIComponent(code)+'&id='+id);
+  es.onopen=()=>{if(Object.keys(mine).length)post(mine)};
+  es.onmessage=e=>on(JSON.parse(e.data).map(p=>({peer:p.peer,presence:p.presence,isMe:p.peer===id,sameTab:p.peer===id})));
+  return{presence:patch=>{for(const k in patch){patch[k]===null?delete mine[k]:mine[k]=patch[k]}return post(patch)}}}
+const gs=()=>{const h=peers.find(p=>p.presence&&p.presence.g);return h?h.presence.g:null};
+
+/* ---------- Sâm ---------- */
+function ana(cs){const r=cs.map(x=>x>>2).sort((a,b)=>a-b),n=r.length;if(!n)return null;
+  if(r.every(x=>x===r[0]))return{k:0,n,t:r[0]};
+  if(n>=3&&r[n-1]<15&&r.every((x,i)=>!i||x===r[i-1]+1))return{k:1,n,t:r[n-1]};
+  return null}
+const beats=(a,o)=>!o||(a.k===o.k&&a.n===o.n&&a.t>o.t)||(a.k===0&&a.n===4&&o.k===0&&o.n===1&&o.t===15);
+const tb=h=>{const c={};h.forEach(x=>c[x>>2]=(c[x>>2]||0)+1);const r=Object.keys(c).map(Number);
+  return c[15]===4||r.every(k=>c[k]%2===0)||(r.length===10&&Math.max(...r)-Math.min(...r)===9&&Math.max(...r)<15)};
+function score(){const n=G.s.length,w=G.w,b=10;
+  if(G.game==='sam'){
+    if(G.tt||G.sam===w){G.sc=G.sc.map((v,k)=>k===w?v+b*(n-1):v-b);G.m=(G.tt?'Tới trắng! ':'Báo Sâm thành công! ')+G.n[w]+' ăn '+b*(n-1)+' điểm'}
+    else{let t=0;G.h.forEach((h,k)=>{if(k!==w){G.sc[k]-=h.length;t+=h.length}});G.sc[w]+=t}}
+  else{const v=k=>k[0]==='W'?50:'SVD'.includes(k[1])?20:+k[1];G.sc[w]+=G.h.reduce((a,h,k)=>k===w?a:a+h.reduce((x,y)=>x+v(y),0),0)}}
+function botSam(i){const h=G.h[i],by={};h.forEach(x=>(by[x>>2]=by[x>>2]||[]).push(x));
+  const rs=Object.keys(by).map(Number).sort((a,b)=>a-b);
+  if(!G.l.length)return{t:'play',c:by[rs[0]]};
+  const o=ana(G.l);
+  if(o.k===0){const r=rs.find(r=>r>o.t&&by[r].length>=o.n);if(r!=null)return{t:'play',c:by[r].slice(0,o.n)};
+    if(o.n===1&&o.t===15){const q=rs.find(r=>by[r].length===4);if(q!=null)return{t:'play',c:by[q]}}}
+  else for(const s of rs){const e=s+o.n-1;if(e>o.t&&e<15){const c=Array.from({length:o.n},(_,j)=>by[s+j]&&by[s+j][0]);if(c.every(Boolean))return{t:'play',c}}}
+  return{t:'pass'}}
+function botUno(i){const h=G.h[i],p=h.filter(k=>pl(k,G)),k=p.find(k=>k[0]!=='W')||p[0];
+  if(!k)return{t:'draw'};if(k[0]!=='W')return{t:'play',c:k};
+  const n={R:0,G:0,B:0,Y:0};h.forEach(x=>{if(x[0] in n)n[x[0]]++});
+  return{t:'play',c:k,x:Object.keys(n).sort((a,b)=>n[b]-n[a])[0]}}
+function samAct(i,c){
+  if(c.t==='play'){const cs=c.c;
+    if(!Array.isArray(cs)||!cs.length||new Set(cs).size!==cs.length||!cs.every(x=>G.h[i].includes(x)))return 0;
+    const p=ana(cs);if(!p||(G.l.length&&!beats(p,ana(G.l))))return 0;
+    const o=G.l.length?ana(G.l):null;
+    if(o&&p.k===0&&p.n===4&&o.k===0&&o.n===1&&o.t===15){G.sc[i]+=2;G.sc[G.lb]-=2;G.m=G.n[i]+' chặt heo của '+G.n[G.lb]}
+    if(G.sam>=0&&G.sam!==i){const n=G.s.length;G.sc=G.sc.map((v,k)=>k===G.sam?v-10*(n-1):v+10);G.m=G.n[G.sam]+' báo Sâm thất bại!';G.sam=-2}
+    G.np++;
+    G.h[i]=G.h[i].filter(x=>!cs.includes(x));G.l=cs.slice().sort((a,b)=>a-b);G.lb=i;G.p=[];
+    if(!G.h[i].length){G.w=i;score()}else nxt();return 1}
+  if(c.t==='pass'&&G.l.length){G.p.push(i);nxt();return 1}
+  return 0}
+function nxt(){do{G.t=(G.t+1)%G.s.length}while(G.p.includes(G.t));if(G.t===G.lb){G.l=[];G.p=[]}}
+
+/* ---------- UNO ---------- */
+const pl=(k,g)=>k[0]==='W'||k[0]===g.col||k[1]===g.top[1];
+function unoAct(i,c){const n=G.s.length,nx=()=>((G.t+G.dr)%n+n)%n,adv=k=>{G.t=((G.t+G.dr*k)%n+n)%n};
+  const dr=(j,k)=>{while(k--){if(!DK.length){DK=sh(DS);DS=[]}if(!DK.length)break;G.h[j].push(DK.pop())}};
+  if(c.t==='draw'){dr(i,1);adv(1);return 1}   // luật nhà: bốc 1 lá là mất lượt
+  if(c.t!=='play'||typeof c.c!=='string')return 0;
+  const k=c.c,x=G.h[i].indexOf(k);if(x<0||!pl(k,G))return 0;
+  G.h[i].splice(x,1);DS.push(G.top);G.top=k;
+  G.col=k[0]==='W'?(typeof c.x==='string'&&c.x.length===1&&'RGBY'.includes(c.x)?c.x:'R'):k[0];
+  if(!G.h[i].length){G.w=i;score();return 1}
+  const v=k[1];let s=1;
+  if(v==='V'){if(n===2)s=2;else G.dr*=-1}
+  else if(v==='S')s=2;
+  else if(v==='D'){dr(nx(),2);s=2}
+  else if(v==='F'){dr(nx(),4);s=2}
+  adv(s);return 1}
+
+/* ---------- host ---------- */
+function deal(){const n=G.s.length;G.w=-1;G.l=[];G.lb=-1;G.p=[];G.dr=1;G.m='';G.sam=-1;G.np=0;G.tt=0;
+  if(G.game==='sam'){const d=[];for(let r=3;r<=15;r++)for(let s=0;s<4;s++)d.push(r*4+s);sh(d);
+    G.h=G.s.map((_,i)=>d.slice(i*10,i*10+10).sort((a,b)=>a-b));G.t=Math.random()*n|0;const tw=G.h.findIndex(tb);if(tw>=0){G.w=tw;G.tt=1;score()}}
+  else{DK=[];for(const c of'RGBY'){DK.push(c+'0');for(const v of'123456789SVD'.repeat(2))DK.push(c+v)}
+    for(let i=0;i<4;i++)DK.push('WW','WF');sh(DK);DS=[];G.h=G.s.map(()=>DK.splice(0,7));
+    let k;do{k=DK.pop();if(k[0]==='W')DK.unshift(k)}while(k[0]==='W');G.top=k;G.col=k[0];G.t=0}}
+function start(game,keep){
+  const ps=peers.filter(p=>p.presence.name).sort((a,b)=>b.sameTab-a.sameTab).slice(0,game==='sam'?5:6);
+  const cap=game==='sam'?5:6,nbb=Math.min(nb,cap-ps.length);if(ps.length+nbb<2)return;
+  const s=[...ps.map(p=>p.peer),...Array.from({length:nbb},(_,j)=>'#bot'+(j+1))];
+  G={game,s,n:[...ps.map(p=>String(p.presence.name).slice(0,16)),...Array.from({length:nbb},(_,j)=>'Bot '+(j+1))],sc:keep&&keep.s.join()===s.join()?keep.sc:s.map(()=>0)};deal();pub()}
+let bt=0;const isBot=i=>G.s[i][0]==='#';
+const pub=()=>{R.presence({g:{...G}});if(G.w<0&&isBot(G.t)&&!bt){bt=1;setTimeout(bot,900)}};
+function bot(){bt=0;if(!G||G.w>=0||!isBot(G.t))return;const i=G.t,c=G.game==='sam'?botSam(i):botUno(i);
+  if(act(i,c)||act(i,{t:G.game==='sam'?'pass':'draw'}))pub()}
+function act(i,c){if(i<0||G.w>=0||!c)return 0;
+  if(c.t==='bao'){if(G.game==='sam'&&!G.np&&G.sam<0){G.sam=i;G.t=i;G.m=G.n[i]+' báo Sâm!';return 1}return 0}
+  if(G.t!==i)return 0;return G.game==='sam'?samAct(i,c):unoAct(i,c)}
+function pump(){if(!G)return;let ch=0;
+  for(const p of peers){const c=p.presence.cmd;
+    if(!p.isMe&&c&&lastN[p.peer]!==c.n){lastN[p.peer]=c.n;if(act(G.s.indexOf(p.peer),c))ch=1}}
+  if(ch)pub()}
+function cmd(c){if(G){if(act(G.s.indexOf(me()),c))pub()}else R.presence({cmd:{...c,n:++seq}})}
+
+/* ---------- ui ---------- */
+const RK={11:'J',12:'Q',13:'K',14:'A',15:'2'},SU='♠♣♦♥',UL={S:'⊘',V:'⇄',D:'+2',W:'🌈',F:'+4'},CN={R:'Đỏ',G:'Xanh lá',B:'Xanh dương',Y:'Vàng'};
+const sc=(id,up)=>`<div class="c ${(id&3)>1?'r':''} ${up?'up':''}" data-i="${id}">${RK[id>>2]||id>>2}<span>${SU[id&3]}</span></div>`;
+const uc=(k,cls)=>`<div class="c u ${k[0]} ${cls||''}" data-k="${k}">${UL[k[1]]||k[1]}</div>`;
+
+function view(){
+  const a=$('#app');
+  if(!R){a.innerHTML=`<div class="pn"><div class="row"><input id="name" maxlength="16" placeholder="Tên của bạn"><input id="code" maxlength="20" placeholder="Mã bàn (không bắt buộc)"><button data-a="join">Vào bàn</button></div>
+    <div class="muted">Chỉ cần nhập tên. Muốn chơi riêng nhóm thì cùng nhập một mã bàn.</div><div>${E(err)}</div></div>`;return}
+  const g=gs();
+  if(!g){const ps=peers.filter(p=>p.presence.name);
+    a.innerHTML=`<div class="pn"><div class="big">Trong bàn (${ps.length})</div><div class="row">${ps.map(p=>`<div class="seat">${E(p.presence.name)}${p.sameTab?' (bạn)':''}</div>`).join('')||'Đang kết nối…'}</div>
+    <div class="row">Bot: <button data-a="bm">−</button><b>${nb}</b><button data-a="bp">＋</button></div><div class="row"><button data-a="startsam" ${ps.length+nb<2?'disabled':''}>Chơi Sâm (2–5 người)</button><button data-a="startuno" ${ps.length+nb<2?'disabled':''}>Chơi UNO (2–6 người)</button></div>
+    <div class="muted">Ai bấm bắt đầu sẽ làm chủ bàn, đừng thoát trang trong lúc chơi.</div></div>`;return}
+  const i=g.s.indexOf(me()),mine=g.h[i]||[],my=g.t===i&&g.w<0,sam=g.game==='sam';
+  let h=`<div class="row">${g.n.map((n,k)=>`<div class="seat ${k===g.t&&g.w<0?'turn':''}">${E(n)}${k===i?' (bạn)':''} · ${g.h[k].length} lá${!sam&&g.h[k].length===1?' 🔔UNO!':''} · ${g.sc[k]} điểm</div>`).join('')}</div>`;
+  h+=`<div class="felt">${sam?(g.l.length?g.l.map(x=>sc(x)).join(''):'Bàn trống: ai đến lượt được đánh tự do'):uc(g.top)+`<div>Màu hiện tại<br><span class="big">${CN[g.col]}</span></div>`}</div>`;
+  h+=g.w>=0?`<div class="pn big">🏆 ${E(g.n[g.w])} thắng!</div>`:`<div class="pn big">${i<0?'Bạn đang xem, chờ ván sau':my?'Đến lượt bạn':'Chờ '+E(g.n[g.t])+'…'}</div>`;
+  if(g.m)h+=`<div class="muted">${E(g.m)}</div>`;if(i>=0){
+    if(sam){const s=[...sel].filter(x=>mine.includes(x));
+      h+=`<div class="hand">${mine.map(x=>sc(x,s.includes(x))).join('')}</div><div class="row"><button data-a="play" ${my&&s.length?'':'disabled'}>Đánh</button><button data-a="pass" ${my&&g.l.length?'':'disabled'}>Bỏ lượt</button>${!g.np&&g.sam<0&&g.w<0?'<button data-a="bao">Báo Sâm</button>':''}</div>`}
+    else{h+=wild?`<div class="pn">Chọn màu: <div class="row">${[...'RGBY'].map(c=>`<button class="cb ${c}" data-a="col" data-x="${c}" title="${CN[c]}"></button>`).join('')}</div></div>`:'';
+      h+=`<div class="hand">${mine.map(k=>uc(k,my&&pl(k,g)?'':'dim')).join('')}</div><div class="row"><button data-a="draw" ${my?'':'disabled'}>Bốc 1 lá (mất lượt)</button></div>`}}
+  if(G)h+=`<div class="row"><button data-a="again">Ván mới</button><button data-a="lobby">Về sảnh</button></div>`;
+  a.innerHTML=h}
+
+$('#app').addEventListener('click',async e=>{
+  const b=e.target.closest('[data-a],[data-i],[data-k]');if(!b)return;const D=b.dataset,g=gs();
+  if(D.a==='join'){const nm=$('#name').value.trim()||'Người chơi',code=$('#code').value.trim()||'chung';
+    
+    R=connect(code,l=>{peers=l;pump();view()});R.presence({name:nm});return view()}
+  if(D.a==='bp'){nb=Math.min(nb+1,5);return view()}if(D.a==='bm'){nb=Math.max(nb-1,0);return view()}
+  if(D.a==='startsam')return start('sam');if(D.a==='startuno')return start('uno');
+  if(!g)return;const i=g.s.indexOf(me());
+  if(D.i){const v=+D.i;sel.has(v)?sel.delete(v):sel.add(v);return view()}
+  if(D.k){if(g.t!==i||g.w>=0||!pl(D.k,g))return;if(D.k[0]==='W'){wild=D.k;return view()}return cmd({t:'play',c:D.k})}
+  if(D.a==='play'){cmd({t:'play',c:[...sel].filter(x=>g.h[i].includes(x))});sel.clear();return view()}
+  if(D.a==='bao')return cmd({t:'bao'});
+  if(D.a==='pass')return cmd({t:'pass'});
+  if(D.a==='draw')return cmd({t:'draw'});
+  if(D.a==='col'){const k=wild;wild=null;return cmd({t:'play',c:k,x:D.x})}
+  if(G&&D.a==='again'){nb=G.s.filter(x=>x[0]==='#').length;return start(G.game,G)}
+  if(G&&D.a==='lobby'){G=null;R.presence({g:null})}
+});
+view();
+</script>
+</body>
+</html>
