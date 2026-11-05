@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
 const {
   getOrCreateProfile, createAccount, loginAccount, getSessionUser,
-  deleteSession, updateAccountProfile, publicProfile, closeDatabase
+  deleteSession, updateAccountProfile, publicProfile, recordMatch, matchHistory, closeDatabase
 } = require('../database');
 
 test.after(async () => { await closeDatabase(); });
@@ -35,6 +35,23 @@ test('tài khoản liên kết hồ sơ khách và chỉ công khai thông tin a
   assert.equal(updated.name, 'Nguoi Choi Moi');
   assert.equal(updated.avatar, '🐼');
   assert.equal((await publicProfile(guest.id)).avatar, '🐼');
+  const opponentToken = crypto.randomBytes(32).toString('hex');
+  const opponent = await getOrCreateProfile(opponentToken, 'Doi Thu');
+  assert.ok(await recordMatch({
+    gameType: 'sam',
+    winnerId: guest.id,
+    points: 3,
+    participants: [{ id: guest.id, name: 'Nguoi Choi Moi' }, { id: opponent.id, name: 'Doi Thu' }]
+  }));
+  const ownHistory = await matchHistory(guest.id, 10);
+  assert.equal(ownHistory[0].game_type, 'sam');
+  assert.equal(ownHistory[0].result, 'won');
+  assert.equal(ownHistory[0].points, 3);
+  assert.equal(ownHistory[0].participants.length, 2);
+  const opponentHistory = await matchHistory(opponent.id, 10);
+  assert.equal(opponentHistory[0].result, 'lost');
+  assert.equal(await recordMatch({ gameType: 'invalid', participants: [] }), false);
+
 
   await deleteSession(created.sessionToken);
   await deleteSession(loggedIn.sessionToken);
