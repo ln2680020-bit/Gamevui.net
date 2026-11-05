@@ -168,7 +168,9 @@
           document.body.appendChild(audio);
           record.audio = audio;
         }
-        if (event.streams?.[0]) audio.srcObject = event.streams[0];
+        // A transceiver-created audio track may arrive without a MediaStream.
+        // Attach a stream wrapper so the remote audio element can actually play it.
+        audio.srcObject = event.streams?.[0] || new MediaStream([event.track]);
         this.applyAudioSettings();
         audio.play().catch(() => { this.error = 'Trình duyệt đang chặn phát âm thanh. Hãy tương tác với trang rồi bật tiếng.'; this.render(); });
       };
