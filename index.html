@@ -31,7 +31,7 @@ if(source)source.close();
 source=new EventSource('/api/events?room='+encodeURIComponent(room)+'&token='+encodeURIComponent(token));
 source.onmessage=e=>{
 const next=JSON.parse(e.data),old=state,og=old?.game,g=next.game;
-let tickerMessage='',doShake=false,showCall=null;
+let tickerMessage='',doShake=false;
 const oldChat=old?.chat?.at(-1)?.id||'',newChat=next.chat?.at(-1);
 if(newChat&&newChat.id!==oldChat&&oldChat)tickerMessage='💬 '+newChat.name+': '+newChat.text;
 const oldEmote=old?.emotes?.at(-1)?.id||'',newEmote=next.emotes?.at(-1);
@@ -39,14 +39,14 @@ if(newEmote&&newEmote.id!==oldEmote&&oldEmote)tickerMessage='✨ '+newEmote.name
 const h=g?.history?.at(-1),oh=og?.history?.at(-1);
 const hk=h?String(h.at)+':'+h.type+':'+h.text:'',ohk=oh?String(oh.at)+':'+oh.type+':'+oh.text:'';
 if(h&&hk!==ohk){
-if(h.type==='call'){tickerMessage='📣 '+h.text;showCall=g.names[h.seat]||'Người chơi'}
+if(h.type==='call'){tickerMessage='📣 '+h.text}
 else if(h.type==='play'&&og?.last?.length){const prev=og.last,wasTwo=prev.length===1&&(prev[0]>>2)===15,wasQuad=prev.length===4&&prev.every(x=>(x>>2)===(prev[0]>>2));if(wasTwo||wasQuad){doShake=true;tickerMessage='⚡ '+h.text+' · CHẶT BÀI!'}}
 }
-if(g&&g.winner>=0){const key=room+':'+g.winner+':'+(g.scores||[]).join(',');if(key!==lastWinnerKey){lastWinnerKey=key;playWinSound();tickerMessage='🏆 '+g.names[g.winner]+' đã chiến thắng!'}}else lastWinnerKey='';
+if(g&&g.winner>=0){const key=room+':'+g.winner+':'+(g.scores||[]).join(',');if(key!==lastWinnerKey){lastWinnerKey=key;playWinSound();tickerMessage='🏆 '+g.names[g.winner]+' đã chiến thắng!';if(g.type==='sam'&&g.samCalled===g.winner)showSamSuccess(g.names[g.winner]);}}else lastWinnerKey='';
 state=next;render();
 if(tickerMessage)showTicker(tickerMessage);
 if(doShake){shakeTable();playTone(190,.16,'effect')}
-if(showCall)showSamSuccess(showCall);
+
 };
 source.onerror=()=>{error='Mất kết nối tạm thời. Đang thử kết nối lại…';render()};
 }function rank(c){return ({11:'J',12:'Q',13:'K',14:'A',15:'2'})[c>>2]||(c>>2)}function samCard(c,sel){return `<div class="card ${((c&3)>1?'red':'')} ${sel?'selected':''}" data-card="${c}">${rank(c)}<small>${'♠♣♦♥'[c&3]}</small></div>`}function samTableCard(c){return `<div class="card ${((c&3)>1?'red':'')}">${rank(c)}<small>${'♠♣♦♥'[c&3]}</small></div>`}function unoCard(k,sel){const v=({S:'⊘',V:'⇄',D:'+2',W:'🌈',F:'+4'})[k[1]]||k[1];return `<div class="card ${k[0]} ${sel?'selected':''}" data-uno="${k}">${v}</div>`}function unoTableCard(k){const v=({S:'⊘',V:'⇄',D:'+2',W:'🌈',F:'+4'})[k[1]]||k[1];return `<div class="card ${k[0]}">${v}</div>`}
