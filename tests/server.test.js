@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { samCombo, beats, findSamMove, endGame, publicState, rooms } = require('../server');
+const { samCombo, beats, canFinishSam, findSamMove, endGame, publicState, rooms } = require('../server');
 test('Sâm nhận diện bộ cùng hạng',()=>assert.deepEqual(samCombo([12,13,14]),{kind:'set',size:3,high:3}));
 test('Sâm nhận diện sảnh liên tiếp',()=>assert.deepEqual(samCombo([12,16,20]),{kind:'run',size:3,high:5}));
 test('Sâm từ chối tổ hợp không hợp lệ',()=>assert.equal(samCombo([12,20,28]),null));
@@ -15,3 +15,10 @@ test('Bot trả về null khi không có nước chặn hợp lệ',()=>assert.e
 
 test('chiến thắng cộng đúng 1 điểm và ghi nhận người thắng',()=>{const p={id:'p1',name:'A',score:2};const g={seats:[p],scores:[2],winner:-1,message:''};endGame(g,0);assert.equal(g.winner,0);assert.equal(p.score,3);assert.equal(g.scores[0],3);assert.match(g.message,/\+1 điểm/);});
 test('không cộng điểm lần thứ hai cho cùng một ván',()=>{const p={id:'p1',name:'A',score:0};const g={seats:[p],scores:[0],winner:-1,message:''};endGame(g,0);endGame(g,0);assert.equal(p.score,1);});
+
+test('tứ quý chặt được một lá 2',()=>assert.equal(beats({kind:'set',size:4,high:8},{kind:'set',size:1,high:15}),true));
+test('tứ quý lớn chặt được tứ quý nhỏ',()=>assert.equal(beats({kind:'set',size:4,high:9},{kind:'set',size:4,high:8}),true));
+test('tứ quý nhỏ không chặt được tứ quý lớn',()=>assert.equal(beats({kind:'set',size:4,high:8},{kind:'set',size:4,high:9}),false));
+test('không cho phép kết thúc ván bằng lá 2',()=>assert.equal(canFinishSam([60],[60]),false));
+test('được đánh lá 2 nếu vẫn còn bài khác trên tay',()=>assert.equal(canFinishSam([60],[60,61]),true));
+test('Bot không chọn lá 2 làm nước kết thúc',()=>assert.equal(findSamMove([60],null),null));
