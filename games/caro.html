@@ -9,7 +9,7 @@ function onlineMode(){
  const token=saved.token||'',panel=$('online-panel'),wrap=$('board-wrap'),sourceUrl='/api/events?room='+encodeURIComponent(room)+'&token='+encodeURIComponent(token);
  let latest=null,lastResult='';
  $('undo').classList.add('hidden');$('restart').classList.add('hidden');$('online-panel').classList.remove('hidden');$('online-room-code').textContent=room||'Không rõ mã phòng';
- document.querySelector('.top span').textContent='🌐 TRỰC TUYẾN · 2 NGƯỜI';$('sub')?.remove();$('turn').textContent='Đang kết nối phòng…';$('message').textContent='Chế độ trực tuyến · '+(mode==='infinite'?'Vô hạn':'Bình thường');
+ document.querySelector('.top span').textContent='🌐 TRỰC TUYẾN · 2 NGƯỜI';document.querySelector('.sub').textContent='Hai người chơi trên hai thiết bị, đồng bộ nước đi theo thời gian thực.';$('turn').textContent='Đang kết nối phòng…';$('message').textContent='Chế độ trực tuyến · '+(mode==='infinite'?'Vô hạn':'Bình thường');
  $('hint').textContent='Mỗi lượt được máy chủ xác thực; bàn cờ sẽ tự đồng bộ cho cả hai người chơi.';
  wrap.classList.add('hidden');
  const status=(message)=>{$('online-status').textContent=message||'';};
