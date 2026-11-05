@@ -138,7 +138,7 @@ function act(r, p, command) {
       if(g.drawnCardSeat!==i) return {ok:false,error:'cannot_pass'};
       g.drawnCardSeat=-1;g.drawnCard=null;nextTurn(g);g.turnDeadline=Date.now()+25000;g.message=`${p.name} bỏ lượt sau khi bốc bài`;return {ok:true};
     }
-    if(command.type!=='play'||typeof command.card!=='string') return {ok:false,error:'invalid_move'};
+    if(command.type!=='play'||(!Array.isArray(command.cards)&&typeof command.card!=='string')) return {ok:false,error:'invalid_move'};
     const h=g.hands[i],cards=Array.isArray(command.cards)?command.cards:[command.card],card=cards[0];
     if(!cards.length||cards.some(c=>typeof c!=='string')||new Set(cards).size!==1||cards.length>2||cards.some(c=>h.filter(x=>x===c).length<cards.filter(x=>x===c).length))return {ok:false,error:'card_not_in_hand'};
     if(cards.length===2&&cards[0]!==cards[1])return {ok:false,error:'pair_must_match'};
