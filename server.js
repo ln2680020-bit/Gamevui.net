@@ -95,4 +95,4 @@ const cleanup=setInterval(()=>{const now=Date.now();for(const [code,r] of rooms)
 cleanup.unref();
 function shutdown(){clearInterval(cleanup);for(const r of rooms.values()){if(r.botTimer)clearTimeout(r.botTimer);for(const e of r.events)e.res.end();}server.close(()=>process.exit(0));}
 if (require.main === module) { server.listen(PORT,()=>console.log(`Sam & UNO server listening on ${PORT}`)); process.on('SIGTERM',shutdown); process.on('SIGINT',shutdown); }
-module.exports={samCombo,beats,publicState,rooms,server};
+module.exports={samCombo,beats,findSamMove,publicState,rooms,server};
