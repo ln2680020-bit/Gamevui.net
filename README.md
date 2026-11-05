@@ -31,10 +31,10 @@ Trình duyệt tạo một mã hồ sơ ngẫu nhiên và lưu trong localStorag
 
 Không đưa mật khẩu hoặc URL database vào mã nguồn GitHub. Giữ `DATABASE_URL` trong phần Environment của Render.
 
-## Cửa hàng giao diện Beta
+## Tùy chỉnh giao diện Beta
 
-- Người chơi nhận 20 xu khi hoàn thành một ván; người thắng nhận thêm 10 xu.
-- Xu dùng để mở khóa mặt bàn và kiểu viền lá bài. Vật phẩm chỉ thay đổi hình thức, không tác động luật chơi.
-- Xu, vật phẩm đã mua và lựa chọn đang trang bị được lưu trong localStorage của trình duyệt hiện tại. Xóa dữ liệu trình duyệt hoặc đổi thiết bị có thể làm mất dữ liệu Beta.
-- Không có nạp tiền thật, giao dịch thật hoặc đổi thưởng bằng tiền.
-- Cửa hàng hiện là bản thử nghiệm phía trình duyệt; chưa có đồng bộ giữa các thiết bị và chưa cần cấu hình PostgreSQL.
+- Cửa hàng chỉ gồm các tùy chỉnh trang trí như màu bàn và kiểu viền lá bài.
+- Tất cả tùy chỉnh đều mở sẵn và miễn phí; người chơi có thể đổi/trang bị bất cứ lúc nào.
+- Không có xu, ví, giá vật phẩm, thưởng xu hoặc cơ chế mở khóa.
+- Lựa chọn giao diện được lưu trong localStorage của trình duyệt hiện tại; đổi trình duyệt/thiết bị hoặc xóa dữ liệu trang web có thể làm mất lựa chọn.
+- Tùy chỉnh không ảnh hưởng luật chơi Sâm hoặc UNO.
