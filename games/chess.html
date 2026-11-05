@@ -43,7 +43,7 @@ function onlineMode(){
   try{await post('action',{command:{from,to,promotion}});}catch(error){status(error.message==='not_your_turn'?'Chưa đến lượt của bạn.':error.message==='invalid_move'?'Nước đi không hợp lệ.':'Không gửi được nước đi: '+error.message);}
  }
  function renderState(next){
-  state=next;const players=next.players||[],gameState=next.game,connected=players.filter(p=>p.connected);
+  state=next;const players=next.players||[],gameState=next.game,connected=players.filter(p=>p.connected);if(gameState&&gameState.moveCount===0&&gameState.winner<0&&!gameState.draw){lastResult='';$('overlay').classList.add('hidden');}
   $('online-players').textContent='Trắng: '+(players[0]?.name||'Đang chờ')+' · Đen: '+(players[1]?.name||'Đang chờ')+' · '+connected.length+'/2 người đã kết nối';
   $('start-online').classList.toggle('hidden',!next.isHost);$('start-online').disabled=connected.length!==2||!!(gameState&&gameState.winner<0&&!gameState.draw);
   if(!gameState){$('turn').textContent='Đang chờ bắt đầu';$('detail').textContent='Chia sẻ mã phòng cho người chơi thứ hai.';$('board').innerHTML='';$('moves').textContent='Chưa có nước đi.';status(connected.length<2?'Đang chờ người chơi thứ hai…':'Đã đủ 2 người. Chủ phòng có thể bắt đầu.');return;}
