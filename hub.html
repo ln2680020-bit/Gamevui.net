@@ -149,7 +149,8 @@ document.addEventListener('click',async e=>{
   setStatus('#account-status','');setStatus('#room-status','');
   if(action==='launch-2048'){window.location.href='/games/2048';return;}
   if(action==='close-mode'){$('#mode-modal').classList.add('hidden');$('#mode-modal .mode-choice[data-action=play-local]').classList.remove('hidden');$('#caro-rules').classList.add('hidden');return;}
-  if(action==='play-local'){if(!['chess','caro'].includes(modeGame))return;if(modeGame==='caro'){$('#mode-title').textContent='⭕ Chọn luật chơi Cờ caro';$('#mode-description').textContent='Bạn muốn chơi Cờ caro theo luật nào?';$('#mode-modal .mode-choice[data-action=play-local]').classList.add('hidden');$('#caro-rules').classList.remove('hidden');return;}window.location.href='/games/'+modeGame;return;}\n   if(action==='choose-caro-mode'){const rule=button.dataset.mode;if(!['normal','infinite'].includes(rule))return;window.location.href='/games/caro?mode='+rule;return;}
+  if(action==='play-local'){if(!['chess','caro'].includes(modeGame))return;if(modeGame==='caro'){$('#mode-title').textContent='⭕ Chọn luật chơi Cờ caro';$('#mode-description').textContent='Bạn muốn chơi Cờ caro theo luật nào?';$('#mode-modal .mode-choice[data-action=play-local]').classList.add('hidden');$('#caro-rules').classList.remove('hidden');return;}window.location.href='/games/'+modeGame;return;}
+   if(action==='choose-caro-mode'){const rule=button.dataset.mode;if(!['normal','infinite'].includes(rule))return;window.location.href='/games/caro?mode='+rule;return;}
   if(action==='toggle-ranking'){const content=$('#ranking-content'),opening=content.classList.contains('hidden');content.classList.toggle('hidden',!opening);button.setAttribute('aria-expanded',String(opening));button.textContent=opening?'Thu gọn ▴':'Mở bảng ▾';if(opening)await loadRanking();return;}
   if(action==='refresh-rooms'){await loadRooms();}
   else if(action==='refresh-ranking'){await loadRanking();}
