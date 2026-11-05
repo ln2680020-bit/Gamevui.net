@@ -181,7 +181,30 @@ function act(r, p, command) {
   }
   return {ok:false,error:'invalid_move'};
 }
-function botMove(r) { const g=r.game; if(!g||g.winner>=0)return; const p=g.seats[g.turn]; if(!p || (!p.bot && p.connected))return; const h=g.hands[g.turn]; if(g.type==='sam'){const move=findSamMove(h,g.lastCombo); if(move)act(r,p,{type:'play',cards:move.cards}); else if(g.last.length)act(r,p,{type:'pass'}); else { const fallback=h.length?[h.slice().sort((a,b)=>(a>>2)-(b>>2))[0]]:[]; if(fallback.length){const remaining=h.filter(card=>!fallback.includes(card));if(remaining.length===1&&(remaining[0]>>2)===15){const alternative=h.find(card=>card!==(fallback[0])&&((h.filter(x=>x!==card).length!==1)||((h.find(x=>x!==card)>>2)!==15)));if(alternative!==undefined)act(r,p,{type:'play',cards:[alternative]});else {g.message=`${p.name} không thể đánh lá 2 cuối cùng; lượt được chuyển tiếp.`;addHistory(g,g.message,g.turn,'timeout');nextTurn(g);g.turnDeadline=Date.now()+30000;}}else act(r,p,{type:'play',cards:fallback});} }} else {if(g.pendingDraw){act(r,p,{type:'accept_penalty'});}else if(h.length===2&&g.unoCalledSeat!==g.turn){act(r,p,{type:'uno'});const k=h.find(c=>unoCanPlay(c,g));if(k)act(r,p,{type:'play',card:k,color:'G'});else act(r,p,{type:'draw'});}else if(g.drawnCardSeat===g.turn){const k=g.drawnCard;if(k&&unoCanPlay(k,g))act(r,p,{type:'play',card:k,color:'G'});else act(r,p,{type:'pass_drawn'});}else{const k=h.find(c=>unoCanPlay(c,g));if(k)act(r,p,{type:'play',card:k,color:'G'});else act(r,p,{type:'draw'});}} send(r); }
+function chooseUnoMove(hand,g,seat) {
+  const playable=hand.filter(card=>unoCanPlay(card,g));
+  if(!playable.length)return null;
+  const next=(seat+g.direction+g.seats.length)%g.seats.length;
+  const threat=(g.hands[next]||[]).length<=2;
+  const colorCount=color=>hand.filter(c=>c!== 'WW'&&c!=='WF'&&c[0]===color).length;
+  const colorForWild=()=>['R','G','B','Y'].sort((a,b)=>colorCount(b)-colorCount(a))[0];
+  const value=card=>{
+    const kind=card[1];
+    let score=card[0]==='W'?-2:card[0]===g.color?3:0.5;
+    if(kind==='D')score+=threat?8:4;
+    else if(kind==='F')score+=threat?9:3.5;
+    else if(kind==='S'||kind==='V')score+=threat?6:2.5;
+    else score+=(Number(kind)||0)*0.18;
+    if(card[0]==='W')score+=kind==='F'?0.2:-1.5;
+    if(card[0]==='W')score+=colorCount(colorForWild())*0.7;
+    else score+=colorCount(card[0])*0.55;
+    return score;
+  };
+  playable.sort((a,b)=>value(b)-value(a));
+  const card=playable[0];
+  return {card,color:card[0]==='W'?colorForWild():undefined};
+}
+function botMove(r) { const g=r.game; if(!g||g.winner>=0)return; const p=g.seats[g.turn]; if(!p || (!p.bot && p.connected))return; const h=g.hands[g.turn]; if(g.type==='sam'){const move=findSamMove(h,g.lastCombo); if(move)act(r,p,{type:'play',cards:move.cards}); else if(g.last.length)act(r,p,{type:'pass'}); else { const fallback=h.length?[h.slice().sort((a,b)=>(a>>2)-(b>>2))[0]]:[]; if(fallback.length){const remaining=h.filter(card=>!fallback.includes(card));if(remaining.length===1&&(remaining[0]>>2)===15){const alternative=h.find(card=>card!==(fallback[0])&&((h.filter(x=>x!==card).length!==1)||((h.find(x=>x!==card)>>2)!==15)));if(alternative!==undefined)act(r,p,{type:'play',cards:[alternative]});else {g.message=`${p.name} không thể đánh lá 2 cuối cùng; lượt được chuyển tiếp.`;addHistory(g,g.message,g.turn,'timeout');nextTurn(g);g.turnDeadline=Date.now()+30000;}}else act(r,p,{type:'play',cards:fallback});} }} else {if(g.pendingDraw){const stack=h.filter(c=>['D','F'].includes(c[1])).sort((a,b)=>(b[1]==='F'?4:2)-(a[1]==='F'?4:2));if(stack.length)act(r,p,{type:'play',card:stack[0],color:stack[0][0]==='W'?chooseUnoMove(h,g,g.turn)?.color:undefined});else act(r,p,{type:'accept_penalty'});}else if(h.length===2&&g.unoCalledSeat!==g.turn){act(r,p,{type:'uno'});const move=chooseUnoMove(h,g,g.turn);if(move)act(r,p,{type:'play',card:move.card,color:move.color});else act(r,p,{type:'draw'});}else if(g.drawnCardSeat===g.turn){const k=g.drawnCard;if(k&&unoCanPlay(k,g))act(r,p,{type:'play',card:k,color:k[0]==='W'?chooseUnoMove([k],g,g.turn)?.color:undefined});else act(r,p,{type:'pass_drawn'});}else{const move=chooseUnoMove(h,g,g.turn);if(move)act(r,p,{type:'play',card:move.card,color:move.color});else act(r,p,{type:'draw'});}} send(r); }
 function scheduleBot(r) { if(r.botTimer)clearTimeout(r.botTimer);if(r.turnTimer)clearTimeout(r.turnTimer); const g=r.game;if(!g||g.winner>=0)return;const deadline=g.turnDeadline||Date.now()+30000;r.turnTimer=setTimeout(()=>{if(!r.game||r.game!==g||g.winner>=0)return;const p=g.seats[g.turn];if(!p)return;if(g.type==='sam'){if(g.last.length)act(r,p,{type:'pass'});else{const move=findSamMove(g.hands[g.turn],null);if(move)act(r,p,{type:'play',cards:move.cards});else{g.message=`${p.name} hết thời gian; lượt được bỏ qua`;addHistory(g,g.message,g.turn,'timeout');nextTurn(g);g.turnDeadline=Date.now()+30000;}}}else{act(r,p,{type:'draw'});}send(r);scheduleBot(r);},Math.max(0,deadline-Date.now()));if(g.seats[g.turn]?.bot||!g.seats[g.turn]?.connected)r.botTimer=setTimeout(()=>{botMove(r);scheduleBot(r);},Math.max(700,(g.turnLockUntil||0)-Date.now()+100)); }
 const server=http.createServer(async(req,res)=>{
   const url=new URL(req.url,'http://localhost');
