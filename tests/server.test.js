@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { samCombo, beats, canFinishSam, findSamMove, endGame, publicState, rooms, act } = require('../server');
+const { LIMITS, samCombo, beats, canFinishSam, findSamMove, endGame, publicState, rooms, act } = require('../server');
 test('Sâm nhận diện bộ cùng hạng',()=>assert.deepEqual(samCombo([12,13,14]),{kind:'set',size:3,high:3}));
 test('Sâm nhận diện sảnh liên tiếp',()=>assert.deepEqual(samCombo([12,16,20]),{kind:'run',size:3,high:5}));
 test('Sâm từ chối tổ hợp không hợp lệ',()=>assert.equal(samCombo([12,20,28]),null));
@@ -39,3 +39,5 @@ test('thống kê chiến thắng được tách riêng giữa Sâm và UNO',()=
 test('trạng thái phòng nhận diện đúng chủ phòng',()=>{const a={id:'a',token:'ta',name:'A'};const r={code:'private1',hostId:'a',isPrivate:true,players:new Map([['a',a]]),game:null};const state=publicState(r,'ta');assert.equal(state.isPrivate,true);assert.equal(state.isHost,true);});
 
 test('Bot Sâm ưu tiên đánh tổ hợp dài khi mở vòng',()=>{const move=findSamMove([12,16,20,24,28],null);assert.equal(move.cards.length,5);assert.equal(move.combo.kind,'run');});
+
+test('thời gian giữ chỗ khi mất kết nối là 120 giây',()=>assert.equal(LIMITS.grace,120000));
