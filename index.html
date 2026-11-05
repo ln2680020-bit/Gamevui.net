@@ -84,7 +84,25 @@ main:has(.game-screen){max-width:1500px;padding:8px 14px}main:has(.game-screen)>
 @media(prefers-reduced-motion:reduce){.rotate-symbol{animation:none!important}}
 
 .account-panel{border:1px solid #e2bd6255;background:linear-gradient(145deg,#10291d,#0b1e15)}.account-panel input{flex:1;min-width:170px}.account-panel select{background:#071b12;color:#fff;border:1px solid #ffffff35;border-radius:10px;padding:10px}.account-panel .row{align-items:center}.profile button{margin-top:8px;padding:6px 9px;font-size:12px}.profile-hero{display:flex;align-items:center;gap:12px;padding:10px 0}.profile-hero>span{font-size:40px}.public-profile{border:1px solid #e2bd6277;background:#10291d}.account-panel .muted{font-size:12px}
-</style></head><body><main><h1>🃏 Sâm & UNO · Green Casino</h1><div id="app"><div class="panel">Đang tải…</div></div></main>
+
+/* Shared Game Hub visual system: compact, cool-toned and mobile-first */
+:root{--bg:#101827;--panel:#1b293b;--felt:#243c4f;--gold:#f3b64b;--text:#f4f7fb;--muted:#aab6c8}
+body{background:radial-gradient(ellipse at 50% -10%,#354968 0,transparent 55%),var(--bg);color:var(--text)}
+.panel,.extra-card{background:var(--panel);border-color:#ffffff1c;box-shadow:0 10px 30px #0002}
+button{border:1px solid #ffffff24;background:#26364b;color:var(--text);border-radius:12px;font-weight:750}
+button:hover:not(:disabled){filter:brightness(1.12)}
+input{background:#101b2b;color:var(--text);border-color:#ffffff2a}
+.game-topbar,.turn-overview,.chat-box,.game-extras{background:#142238;border-color:#ffffff20}
+.game-screen .felt{background:radial-gradient(ellipse,#34536a,#1a3045);border:1px solid #ffffff24;border-radius:18px;box-shadow:inset 0 0 26px #07111d88}
+.hand-zone{background:#142238;border:1px solid #ffffff18}
+.mode-chip.sam-mode{background:#1e604f;color:#b8f5d9}.mode-chip.uno-mode{background:#8f343b;color:#ffe4dc}
+.game-screen .primary-actions button:first-child{background:linear-gradient(135deg,#f3b64b,#d68b32);color:#241b0b;border:0}
+.game-screen .secondary-actions button[data-action="sort"],.game-screen .secondary-actions button[data-action="hint"]{display:none}
+.game-extras .extra-card .muted{color:var(--muted)}
+.game-screen .seat{background:#26364b;border-color:#ffffff20}.game-screen .seat.current-turn{background:#58451e;border-color:#f3b64b}
+.game-screen .chat-box{border-radius:14px}.game-screen .chat-line{background:#26364b}
+@media(max-width:760px){.game-screen .felt{background:radial-gradient(ellipse,#34536a,#1a3045);min-height:92px}}
+</style></head><body><main><h1>🃏 Sâm & UNO · Gamevui.net</h1><div id="app"><div class="panel">Đang tải…</div></div></main>
 <script>
 window.__samunoBootTimer=setTimeout(()=>{const app=document.getElementById('app');if(app&&/Đang tải|Đang kết nối phòng/.test(app.textContent)){app.innerHTML='<div class="panel"><b>Không thể khởi động giao diện.</b><p>Trang có thể gặp lỗi JavaScript hoặc phiên bản cũ trong bộ nhớ trình duyệt.</p><button onclick="location.reload()">Tải lại trò chơi</button></div>';}},7000);
 window.addEventListener('error',event=>{const app=document.getElementById('app');if(app&&/Đang tải|Đang kết nối phòng/.test(app.textContent)){app.innerHTML='<div class="panel"><b>Giao diện gặp lỗi khi khởi động.</b><p>Vui lòng tải lại trò chơi. Nếu lỗi vẫn còn, gửi ảnh Console để kiểm tra.</p><button onclick="location.reload()">Tải lại trò chơi</button></div>';console.error('SamUNO startup error:',event.message);}});
@@ -229,7 +247,8 @@ const my=g.mySeat,hand=g.hand||[],sam=g.type==='sam',nextSeat=nextSeatIndex(g);
  </div>
  <div class="game-chat-dock">${chatPanel()}</div>
  <details class="game-extras"><summary>☰ Thông tin & tiện ích</summary><div class="extras-grid">
- <section class="extra-card"><b>🏆 Điểm số</b><div class="leaderboard">${leaderboard(g.names,g.scores)}</div></section>
+ <section class="extra-card"><b>⚙️ Thao tác phụ</b><div class="row"><button data-action="sort">↕ Sắp xếp bài</button><button data-action="hint">💡 Gợi ý nước đi</button></div></section>
+  <section class="extra-card"><b>🏆 Điểm số</b><div class="leaderboard">${leaderboard(g.names,g.scores)}</div></section>
  <section class="extra-card"><b>🔊 Âm thanh</b>${soundSettingsPanel()}</section>
  <section class="extra-card"><b>📜 Lịch sử ván</b>${historyPanel(g)}</section>
  <section class="extra-card"><b>👤 Hồ sơ</b>${profilePanel(players)}</section>
