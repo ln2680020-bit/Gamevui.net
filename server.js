@@ -112,7 +112,7 @@ function act(r, p, command) {
       if(command.type==='play') {
         const cards=Array.isArray(command.cards)?command.cards:[command.card];
         const h=g.hands[i],kind=pd.type;
-        if(!cards.length||cards.some(c=>typeof c!=='string'||c[1]!==kind)||new Set(cards).size!==1||cards.length>2||!cards.every(c=>h.includes(c))) return {ok:false,error:'must_stack_same_penalty'};
+        if(!cards.length||cards.some(c=>typeof c!=='string'||c[1]!==kind)||new Set(cards).size!==1||cards.length>2||cards.some(c=>h.filter(x=>x===c).length<cards.filter(x=>x===c).length)) return {ok:false,error:'must_stack_same_penalty'};
         const card=cards[0];
         if(cards.length===2&&cards[0]!==cards[1]) return {ok:false,error:'pair_must_match'};
         for(const c of cards)h.splice(h.indexOf(c),1);
@@ -140,11 +140,11 @@ function act(r, p, command) {
     }
     if(command.type!=='play'||typeof command.card!=='string') return {ok:false,error:'invalid_move'};
     const h=g.hands[i],cards=Array.isArray(command.cards)?command.cards:[command.card],card=cards[0];
-    if(!cards.length||cards.some(c=>typeof c!=='string')||new Set(cards).size!==1||cards.length>2||!cards.every(c=>h.includes(c)))return {ok:false,error:'card_not_in_hand'};
+    if(!cards.length||cards.some(c=>typeof c!=='string')||new Set(cards).size!==1||cards.length>2||cards.some(c=>h.filter(x=>x===c).length<cards.filter(x=>x===c).length))return {ok:false,error:'card_not_in_hand'};
     if(cards.length===2&&cards[0]!==cards[1])return {ok:false,error:'pair_must_match'};
     if(g.drawnCardSeat===i&&(!cards.includes(g.drawnCard)||cards.length!==1))return {ok:false,error:'must_play_drawn_card'};
     if(!unoCanPlay(card,g))return {ok:false,error:'card_not_playable'};
-    if(h.length===2&&g.unoCalledSeat!==i)return {ok:false,error:'must_call_uno_first'};
+    
     const oldColor=g.color;
     for(const c of cards)h.splice(h.indexOf(c),1);g.discard.push(g.top);g.top=card;
     g.color=card[0]==='W'&&'RGBY'.includes(command.color)?command.color:card[0];
