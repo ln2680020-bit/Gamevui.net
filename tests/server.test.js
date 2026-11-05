@@ -77,3 +77,20 @@ test('trang Cờ caro và Cờ vua có JavaScript hợp lệ',()=>{
     for(const script of scripts)new vm.Script(script[1],{filename:file});
   }
 });
+
+test('Game Hub exposes three bot difficulties for Caro and Chess',()=>{
+  const html=fs.readFileSync(require.resolve('../hub.html'),'utf8');
+  assert.match(html,/data-action="play-bot"/);
+  assert.match(html,/id="bot-difficulty"/);
+  for(const level of ['easy','medium','hard'])assert.ok(html.includes('value="'+level+'"'));
+  assert.match(html,/games\/caro\?mode=/);
+  assert.match(html,/games\/chess\?bot=1/);
+});
+test('Caro and Chess bot pages parse and include a bot opponent mode',()=>{
+  for(const [file,marker] of [['../games/caro.html','function botMove()'],['../games/chess.html','function botMove()']]){
+    const html=fs.readFileSync(require.resolve(file),'utf8');
+    assert.ok(html.includes(marker),file+' must implement the bot move routine');
+    const scripts=[...html.matchAll(/<script>([\s\S]*?)<\/script>/g)];
+    for(const script of scripts)new vm.Script(script[1],{filename:file});
+  }
+});
