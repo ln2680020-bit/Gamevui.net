@@ -80,3 +80,14 @@ test('điểm lá UNO theo luật truyền thống',()=>{
   assert.equal(unoCardPoints('WS'),50);
   assert.equal(unoCardPoints('WF'),50);
 });
+
+test('người thắng UNO nhận tổng điểm các lá còn lại của đối thủ',()=>{
+  const p1={id:'p1',name:'A',score:0};
+  const p2={id:'p2',name:'B',score:0};
+  const g={type:'uno',seats:[p1,p2],hands:[[],['R7','YD','WF']],scores:[0,0],winner:-1,message:''};
+  const { endGame } = require('../server');
+  endGame(g,0);
+  assert.equal(g.roundPoints,77);
+  assert.equal(p1.score,77);
+  assert.equal(g.scores[0],77);
+});
