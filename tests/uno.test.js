@@ -47,6 +47,7 @@ test('+2 buộc người kế tiếp rút 2 lá và mất lượt, không cộng
 test('+4 có thể bị thách thức thành công nếu người đánh còn màu hiện tại',()=>{
   const {r,g,p1,p2}=fixture({hands:[['WF','R4'],['G1']],top:'R3',color:'R'});
   assert.equal(act(r,p1,{type:'play',card:'WF',color:'G'}).ok,true);
+  assert.equal(act(r,p1,{type:'uno'}).ok,true);
   assert.equal(g.pendingDraw.offenderHadColor,true);
   assert.equal(act(r,p2,{type:'challenge'}).ok,true);
   assert.equal(g.hands[0].length,5);
