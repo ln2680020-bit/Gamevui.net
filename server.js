@@ -61,7 +61,7 @@ function startGame(r, type) {
   if (seats.length < 2) return false;
   const g = { type, seats, hands: [], turn: 0, winner: -1, last: [], message: '', history:[], turnDeadline:Date.now()+25000, scores: seats.map(p => p.score || 0), direction: 1, color: '', top: '', samCalled: -1, passes: [], lastCombo: null, lastPlayer: -1, draw: [], discard: [], drawnCardSeat:-1, drawnCard:null, unoPendingSeat:-1, unoCalledSeat:-1, pendingDraw:null };
   if (type === 'sam') { const d = makeSamDeck(); g.hands = seats.map((_,i)=>d.slice(i*10,i*10+10).sort((a,b)=>a-b)); }
-  else { const d=unoDeck(); g.hands=seats.map(()=>d.splice(0,7)); g.draw=d; g.top=g.draw.pop(); while(g.top[0]==='W'){g.draw.unshift(g.top);g.top=g.draw.pop();} g.color=g.top[0]; }
+  else { const d=unoDeck(); g.hands=seats.map(()=>d.splice(0,7)); g.draw=d; g.top=g.draw.pop(); while(g.top[0]==='W'){g.draw.unshift(g.top);g.top=g.draw.pop();} g.color=g.top[0]; if(g.top[1]==='S'){g.turn=1%seats.length;g.message='Lá đầu tiên là Cấm lượt: người chơi đầu tiên bị bỏ lượt.';} else if(g.top[1]==='V'){g.direction=-1;g.turn=seats.length===2?1:seats.length-1;g.message='Lá đầu tiên là Đảo chiều: chiều chơi được đảo ngược.';} else if(g.top[1]==='D'){drawCards(g,0,2);g.turn=1%seats.length;g.message='Lá đầu tiên là +2: người chơi đầu tiên rút 2 lá và mất lượt.';} }
   r.game=g;addHistory(g,`Bắt đầu ván ${type==='sam'?'Sâm':'UNO'}`,-1,'start');send(r); return true;
 }
 function addHistory(g,text,seat=-1,type='info'){g.history=g.history||[];g.history.push({text,seat,type,at:Date.now()});if(g.history.length>60)g.history.shift();}
