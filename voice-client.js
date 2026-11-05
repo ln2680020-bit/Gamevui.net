@@ -28,6 +28,7 @@
       this.error = '';
       this.root = null;
       this.reconnectTimer = null;
+      this.reconnectAttempts = 0;
       this.injectStyle();
       window.addEventListener('pagehide', () => this.leave());
     }
@@ -85,7 +86,7 @@
         const scheme = location.protocol === 'https:' ? 'wss:' : 'ws:';
         const socket = new WebSocket(scheme + '//' + location.host + '/api/voice?room=' + encodeURIComponent(room) + '&token=' + encodeURIComponent(token));
         this.socket = socket;
-        socket.onopen = () => { this.error = ''; this.render(); };
+        socket.onopen = () => { this.reconnectAttempts = 0; this.error = ''; this.render(); };
         socket.onmessage = event => this.onMessage(event);
         socket.onerror = () => { this.error = 'Kênh thoại gặp lỗi kết nối. Trò chơi vẫn hoạt động bình thường.'; this.render(); };
         socket.onclose = () => {
@@ -93,16 +94,23 @@
           this.socket = null;
           this.render();
           if (this.room === room && this.token === token) {
-            clearTimeout(this.reconnectTimer);
-            this.reconnectTimer = setTimeout(() => {
-              if (this.room === room && this.token === token) this.enter(room, token);
-            }, 2500);
+            this.scheduleReconnect(room, token);
           }
         };
       } catch (error) {
         this.error = error.message || 'Không thể kết nối Voice Chat.';
         this.render();
+        this.scheduleReconnect(room, token);
       }
+    }
+    scheduleReconnect(room, token) {
+      if (this.room !== room || this.token !== token || this.reconnectTimer) return;
+      const delay = Math.min(1000 * (2 ** this.reconnectAttempts), 10000);
+      this.reconnectAttempts = Math.min(this.reconnectAttempts + 1, 4);
+      this.reconnectTimer = setTimeout(() => {
+        this.reconnectTimer = null;
+        if (this.room === room && this.token === token) this.enter(room, token);
+      }, delay);
     }
     syncPlayers(players) {
       if (!Array.isArray(players)) return;
@@ -135,11 +143,15 @@
     ensurePeer(info) {
       if (!info?.id || info.id === this.self?.id || this.peers.has(info.id)) return;
       const pc = new RTCPeerConnection({ iceServers: this.iceServers });
-      const record = { id: info.id, name: String(info.name || 'Người chơi').slice(0, 24), pc, audio: null, polite: String(this.self?.id || '').localeCompare(String(info.id)) > 0, makingOffer: false, ignoreOffer: false, candidates: [], speaking: false };
+      // Reserve an audio sender/receiver before the microphone is enabled.
+      // Replacing its track later does not require another SDP negotiation.
+      const audioTransceiver = pc.addTransceiver('audio', { direction: 'sendrecv' });
+      const record = { id: info.id, name: String(info.name || 'Người chơi').slice(0, 24), pc, sender: audioTransceiver.sender, audio: null, polite: String(this.self?.id || '').localeCompare(String(info.id)) > 0, makingOffer: false, ignoreOffer: false, isSettingRemoteAnswerPending: false, candidates: [], speaking: false };
       this.peers.set(info.id, record);
       pc.onicecandidate = event => { if (event.candidate) this.send({ type: 'ice-candidate', to: info.id, candidate: event.candidate.toJSON() }); };
       pc.onnegotiationneeded = async () => {
         try {
+          if (pc.signalingState !== 'stable') return;
           record.makingOffer = true;
           await pc.setLocalDescription();
           this.send({ type: pc.localDescription.type, to: info.id, description: { type: pc.localDescription.type, sdp: pc.localDescription.sdp } });
@@ -160,11 +172,18 @@
         this.applyAudioSettings();
         audio.play().catch(() => { this.error = 'Trình duyệt đang chặn phát âm thanh. Hãy tương tác với trang rồi bật tiếng.'; this.render(); });
       };
+      pc.oniceconnectionstatechange = () => {
+        if (pc.iceConnectionState === 'failed') {
+          this.error = 'Không tìm được đường truyền tới ' + record.name + '. Mạng này có thể cần cấu hình TURN.';
+          try { pc.restartIce(); } catch {}
+        }
+        this.render();
+      };
       pc.onconnectionstatechange = () => {
         if (pc.connectionState === 'failed') this.error = 'Kết nối thoại với ' + record.name + ' thất bại. Có thể cần cấu hình TURN.';
         this.render();
       };
-      if (this.stream) for (const track of this.stream.getAudioTracks()) pc.addTrack(track, this.stream);
+      if (this.stream) record.sender.replaceTrack(this.stream.getAudioTracks()[0]).catch(error => { this.error = error.message; this.render(); });
       this.render();
     }
     async handleSignal(from, signal) {
@@ -181,12 +200,19 @@
         return;
       }
       if (!['offer', 'answer'].includes(signal.type) || !signal.description) return;
-      const collision = signal.type === 'offer' && (peer.makingOffer || pc.signalingState !== 'stable');
-      peer.ignoreOffer = !peer.polite && collision;
+      const readyForOffer = !peer.makingOffer && (pc.signalingState === 'stable' || peer.isSettingRemoteAnswerPending);
+      const offerCollision = signal.type === 'offer' && !readyForOffer;
+      peer.ignoreOffer = !peer.polite && offerCollision;
       if (peer.ignoreOffer) return;
-      if (collision) await Promise.all([pc.setLocalDescription({ type: 'rollback' }), pc.setRemoteDescription(signal.description)]);
-      else await pc.setRemoteDescription(signal.description);
-      for (const candidate of peer.candidates.splice(0)) await pc.addIceCandidate(candidate);
+      peer.isSettingRemoteAnswerPending = signal.type === 'answer';
+      // setRemoteDescription automatically rolls back a colliding local offer
+      // for the polite peer; keep the operation sequential to avoid state races.
+      await pc.setRemoteDescription(signal.description);
+      peer.isSettingRemoteAnswerPending = false;
+      for (const candidate of peer.candidates.splice(0)) {
+        try { await pc.addIceCandidate(candidate); }
+        catch (error) { if (!peer.ignoreOffer) throw error; }
+      }
       if (signal.type === 'offer') {
         await pc.setLocalDescription();
         this.send({ type: 'answer', to: from.id, description: { type: pc.localDescription.type, sdp: pc.localDescription.sdp } });
@@ -195,8 +221,7 @@
     async toggleMic() {
       if (this.enabled) {
         for (const peer of this.peers.values()) {
-          const sender = peer.pc.getSenders().find(item => item.track?.kind === 'audio');
-          if (sender) await sender.replaceTrack(null).catch(() => {});
+          if (peer.sender) await peer.sender.replaceTrack(null).catch(() => {});
         }
         for (const track of this.stream?.getTracks() || []) track.stop();
         this.stream = null;
@@ -216,9 +241,7 @@
         this.enabled = true;
         for (const peer of this.peers.values()) {
           const track = this.stream.getAudioTracks()[0];
-          const sender = peer.pc.getSenders().find(item => item.track?.kind === 'audio') || peer.pc.getTransceivers().find(item => item.receiver.track?.kind === 'audio')?.sender;
-          if (sender) await sender.replaceTrack(track);
-          else peer.pc.addTrack(track, this.stream);
+          if (peer.sender) await peer.sender.replaceTrack(track);
         }
         this.error = '';
         this.render();
