@@ -111,13 +111,14 @@ function act(r, p, command) {
       if(pd.seat!==i) return {ok:false,error:'not_your_turn'};
       if(command.type==='play') {
         const cards=Array.isArray(command.cards)?command.cards:[command.card];
-        const h=g.hands[i],kind=pd.type;
-        if(!cards.length||cards.some(c=>typeof c!=='string'||c[1]!==kind)||new Set(cards).size!==1||cards.length>2||cards.some(c=>h.filter(x=>x===c).length<cards.filter(x=>x===c).length)) return {ok:false,error:'must_stack_same_penalty'};
+        const h=g.hands[i];
+        // Cho phép chồng +2 hoặc +4 bất kể màu và loại lá cộng trước đó.
+        if(!cards.length||cards.some(c=>typeof c!=='string'||!['D','F'].includes(c[1]))||new Set(cards).size!==1||cards.length>2||cards.some(c=>h.filter(x=>x===c).length<cards.filter(x=>x===c).length)) return {ok:false,error:'must_stack_draw_card'};
         const card=cards[0];
         if(cards.length===2&&cards[0]!==cards[1]) return {ok:false,error:'pair_must_match'};
         for(const c of cards)h.splice(h.indexOf(c),1);
         g.discard.push(g.top);g.top=card;g.color=card[0]==='W'&&'RGBY'.includes(command.color)?command.color:card[0];
-        pd.amount+=kind==='D'?2:4;pd.offender=i;pd.seat=(i+g.direction+g.seats.length)%g.seats.length;
+        pd.amount+=card[1]==='D'?2:4;pd.type=card[1];pd.offender=i;pd.seat=(i+g.direction+g.seats.length)%g.seats.length;
         g.drawnCardSeat=-1;g.drawnCard=null;addHistory(g,`${p.name} chồng ${card} · tổng phạt ${pd.amount} lá`,i,'play');
         if(!h.length){g.pendingDraw=null;endGame(g,i);}else{nextTurn(g);g.turnDeadline=Date.now()+25000;g.message=`Cộng dồn ${pd.amount} lá phạt!`;}return {ok:true};
       }
