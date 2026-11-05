@@ -72,7 +72,7 @@ test('trang 2048 có JavaScript hợp lệ trước khi triển khai',()=>{
 test('trang Cờ caro và Cờ vua có JavaScript hợp lệ',()=>{
   for(const file of ['../games/caro.html','../games/chess.html']){
     const html=fs.readFileSync(require.resolve(file),'utf8');
-    const scripts=[...html.matchAll(/<script>([\\s\\S]*?)<\\/script>/g)];
+    const scripts=[...html.matchAll(/<script>([\s\S]*?)<\/script>/g)];
     assert.ok(scripts.length>0,file+' must contain its client script');
     for(const script of scripts)new vm.Script(script[1],{filename:file});
   }
