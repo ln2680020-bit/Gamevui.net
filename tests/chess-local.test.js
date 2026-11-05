@@ -9,5 +9,7 @@ test('Cờ vua nhận diện chiếu hết',()=>{const game=new Chess();for(cons
 
 test('Cờ vua trả về loại quân bị bắt để giao diện thông báo đúng quân',()=>{const game=new Chess();for(const move of ['e4','d5','exd5'])assert.ok(game.move(move));const last=game.history({verbose:true}).at(-1);assert.equal(last.captured,'p');assert.equal(last.piece,'p');});
 
-test('Biến thể tự do cho phép đi quân khác khi đang bị chiếu',()=>{const game=new Chess('4k3/8/8/8/8/8/4r3/R3K3 w - - 0 1');assert.equal(game.in_check(),true);assert.equal(game.moves({square:'a1'}).length,0);assert.ok(game.moves({square:'a1',verbose:true,allowCheck:true}).some(m=>m.to==='a2'));assert.ok(game.move({from:'a1',to:'a2'},{allowCheck:true}));assert.equal(game.in_check(),true);});
+test('Biến thể tự do cho phép đi quân khác khi đang bị chiếu',()=>{const game=new Chess('4k3/8/8/8/8/8/4r3/R3K3 w - - 0 1');assert.equal(game.in_check(),true);assert.equal(game.moves({square:'a1'}).length,0);assert.ok(game.moves({square:'a1',verbose:true,allowCheck:true}).some(m=>m.to==='a2'));assert.ok(game.move({from:'a1',to:'a2'},{allowCheck:true}));assert.equal(game.turn(),'b');assert.ok(game.move({from:'e8',to:'d8'},{allowCheck:true}));assert.equal(game.in_check(),true);});
 test('Biến thể tự do vẫn không cho vua tự đi vào ô bị khống chế',()=>{const game=new Chess('3rk3/8/8/8/8/8/4r3/R3K3 w - - 0 1');assert.equal(game.in_check(),true);assert.equal(game.moves({square:'e1',verbose:true,allowCheck:true}).some(m=>m.to==='d1'),false);});
+
+test('Biến thể tự do kết thúc ván khi một bên bắt được Vua',()=>{const game=new Chess('4k3/8/8/8/8/8/8/K3R3 w - - 0 1');const move=game.move({from:'e1',to:'e8'},{allowCheck:true});assert.ok(move);assert.equal(move.captured,'k');});
