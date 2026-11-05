@@ -59,3 +59,11 @@ test('Game Hub inline JavaScript parses before serving interactive controls',()=
   assert.ok(scripts.length>0,'hub.html must contain its client script');
   for(const script of scripts)new vm.Script(script[1],{filename:'hub.html'});
 });
+
+
+test('trang 2048 có JavaScript hợp lệ trước khi triển khai',()=>{
+  const html=fs.readFileSync(require.resolve('../games/2048.html'),'utf8');
+  const scripts=[...html.matchAll(/<script>([\\s\\S]*?)<\\/script>/g)];
+  assert.ok(scripts.length>0,'2048 page must contain its client script');
+  for(const script of scripts)new vm.Script(script[1],{filename:'games/2048.html'});
+});
