@@ -53,7 +53,7 @@ function findSamMove(hand, lastCombo) {
     if (picked.length) {
       const combo = canFinishSam(picked, hand) ? samCombo(picked) : null;
       if (combo && beats(combo, lastCombo)) {
-        if (!best || (lastCombo ? picked.length < best.length : picked.length > best.length) || (picked.length === best.length && combo.high < best.combo.high)) best = { cards: picked.slice(), combo };
+        if (!best || (lastCombo ? picked.length < best.cards.length : picked.length > best.cards.length) || (picked.length === best.cards.length && combo.high < best.combo.high)) best = { cards: picked.slice(), combo };
       }
     }
     if (picked.length >= 10) return;
