@@ -28,3 +28,22 @@ test('2048 nhận diện chiến thắng và tạo ô mới trên ô trống',()
   const result=E.spawnTile(E.emptyBoard(),()=>0);
   assert.deepEqual(result.tile,{row:0,col:0,value:2});
 });
+
+test('2048 trả về đường đi của từng ô và thông tin ô được gộp để tạo hiệu ứng',()=>{
+  const board=[[2,2,0,0],[0,4,0,0],[0,0,0,0],[0,0,0,0]];
+  const result=E.moveBoard(board,'left');
+  assert.deepEqual(result.board[0],[4,0,0,0]);
+  assert.deepEqual(result.merges,[{at:{row:0,col:0},value:4}]);
+  assert.deepEqual(result.moves.slice(0,2),[
+    {from:{row:0,col:0},to:{row:0,col:0},value:2,merged:true},
+    {from:{row:0,col:1},to:{row:0,col:0},value:2,merged:true}
+  ]);
+  assert.deepEqual(result.moves[2],{from:{row:1,col:1},to:{row:1,col:0},value:4,merged:false});
+});
+test('2048 cung cấp tọa độ di chuyển chính xác cho cả bốn hướng',()=>{
+  const board=[[0,0,0,2],[0,0,0,0],[0,0,0,0],[0,0,0,0]];
+  for(const [direction,to] of [['left',{row:0,col:0}],['right',{row:0,col:3}],['up',{row:0,col:3}],['down',{row:3,col:3}]]){
+    const move=E.moveBoard(board,direction).moves[0];
+    assert.deepEqual(move.to,to);
+  }
+});
