@@ -86,7 +86,8 @@ const next=JSON.parse(e.data),old=state,og=old?.game,g=next.game;
 let tickerMessage='',unoMotion=null,dealMotion=false;
 const h0=g?.history?.at(-1),oh0=og?.history?.at(-1);
 if(g?.type==='uno'&&!og&&h0?.type==='start')dealMotion=true;
-if(g?.type==='uno'&&h0&&h0!==oh0){if(h0.type==='play'){let from=null;if(h0.seat===og?.mySeat){const cardEl=[...document.querySelectorAll('[data-uno]')].find(el=>el.dataset.uno===h0.card);from=cardRect(cardEl);}else from=cardRect(document.querySelectorAll('.turn-overview + .row .seat')[h0.seat]);unoMotion={type:'play',seat:h0.seat,card:h0.card,from};}else if(h0.type==='draw')unoMotion={type:'draw',seat:h0.seat};else if(h0.type==='penalty')unoMotion={type:'penalty',seat:h0.seat,count:h0.count||2};}
+const h0key=h0?String(h0.at)+':'+h0.type+':'+h0.text:'',oh0key=oh0?String(oh0.at)+':'+oh0.type+':'+oh0.text:'';
+if(g?.type==='uno'&&h0&&h0key!==oh0key){if(h0.type==='play'){let from=null;if(h0.seat===og?.mySeat){const cardEl=[...document.querySelectorAll('[data-uno]')].find(el=>el.dataset.uno===h0.card);from=cardRect(cardEl);}else from=cardRect(document.querySelectorAll('.turn-overview + .row .seat')[h0.seat]);unoMotion={type:'play',seat:h0.seat,card:h0.card,from};}else if(h0.type==='draw')unoMotion={type:'draw',seat:h0.seat};else if(h0.type==='penalty')unoMotion={type:'penalty',seat:h0.seat,count:h0.count||2};}
 
 const oldChat=old?.chat?.at(-1)?.id||'',newChat=next.chat?.at(-1);
 if(newChat&&newChat.id!==oldChat&&old)tickerMessage='💬 '+newChat.name+': '+newChat.text;
