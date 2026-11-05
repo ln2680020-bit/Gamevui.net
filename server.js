@@ -30,11 +30,27 @@ function nextTurn(g, steps = 1) { const n = g.seats.length; g.turn = (g.turn + g
 function makeSamDeck() { const d = []; for (let rank = 3; rank <= 15; rank++) for (let suit = 0; suit < 4; suit++) d.push(rank * 4 + suit); return shuffle(d); }
 function samCombo(cards) { if (!Array.isArray(cards) || !cards.length) return null; const ranks = cards.map(c => c >> 2).sort((a,b) => a-b); if (ranks.every(x => x === ranks[0])) return { kind: 'set', size: ranks.length, high: ranks[0] }; if (ranks.length >= 3 && ranks[ranks.length-1] < 15 && ranks.every((x,i) => i === 0 || x === ranks[i-1] + 1)) return { kind: 'run', size: ranks.length, high: ranks.at(-1) }; return null; }
 function beats(a,b) { return !b || (a.kind === b.kind && a.size === b.size && a.high > b.high) || (a.kind === 'set' && a.size === 4 && b.kind === 'set' && b.size === 1 && b.high === 15); }
+function findSamMove(hand, lastCombo) {
+  const cards = hand.slice().sort((a,b) => (a >> 2) - (b >> 2));
+  let best = null;
+  function visit(start, picked) {
+    if (picked.length) {
+      const combo = samCombo(picked);
+      if (combo && beats(combo, lastCombo)) {
+        if (!best || picked.length < best.length || (picked.length === best.length && combo.high < best.combo.high)) best = { cards: picked.slice(), combo };
+      }
+    }
+    if (picked.length >= 10) return;
+    for (let i=start;i<cards.length;i++) { picked.push(cards[i]); visit(i+1,picked); picked.pop(); }
+  }
+  visit(0,[]);
+  return best;
+}
 function unoDeck() { const d=[]; for (const c of 'RGBY') { d.push(c+'0'); for (let n=1;n<=9;n++) d.push(c+n,c+n); for (const v of ['S','V','D']) d.push(c+v,c+v); } for(let i=0;i<4;i++) d.push('WW','WF'); return shuffle(d); }
 function startGame(r, type) {
   const seats = [...r.players.values()].filter(p => p.connected || p.bot).slice(0, type === 'sam' ? 5 : 6);
   if (seats.length < 2) return false;
-  const g = { type, seats, hands: [], turn: 0, winner: -1, last: [], message: '', scores: seats.map(p => p.score || 0), direction: 1, color: '', top: '', samCalled: -1, passes: [], draw: [], discard: [] };
+  const g = { type, seats, hands: [], turn: 0, winner: -1, last: [], message: '', scores: seats.map(p => p.score || 0), direction: 1, color: '', top: '', samCalled: -1, passes: [], lastCombo: null, lastPlayer: -1, draw: [], discard: [] };
   if (type === 'sam') { const d = makeSamDeck(); g.hands = seats.map((_,i)=>d.slice(i*10,i*10+10).sort((a,b)=>a-b)); }
   else { const d=unoDeck(); g.hands=seats.map(()=>d.splice(0,7)); g.draw=d; g.top=g.draw.pop(); while(g.top[0]==='W'){g.draw.unshift(g.top);g.top=g.draw.pop();} g.color=g.top[0]; }
   r.game=g; send(r); return true;
@@ -45,7 +61,7 @@ function act(r, p, command) {
   const i=g.seats.findIndex(s=>s.id===p.id); if(i<0 || i!==g.turn) return {ok:false,error:'not_your_turn'};
   if(g.type==='sam') {
     if(command.type==='call_sam') { if(g.last.length || g.samCalled>=0) return {ok:false,error:'cannot_call_sam'}; g.samCalled=i; g.message=`${p.name} báo Sâm!`; send(r); return {ok:true}; }
-    if(command.type==='pass') { if(!g.last.length) return {ok:false,error:'cannot_pass'}; g.passes.push(i); nextTurn(g); if(g.passes.length>=g.seats.length-1){g.last=[];g.passes=[];g.turn=(g.seats.findIndex(s=>s.id===g.seats.find(x=>x.id===g.lastPlayer)?.id)+g.seats.length)%g.seats.length;} return {ok:true}; }
+    if(command.type==='pass') { if(!g.last.length || !g.lastCombo || g.lastPlayer<0) return {ok:false,error:'cannot_pass'}; if(g.passes.includes(i)) return {ok:false,error:'already_passed'}; g.passes.push(i); if(g.passes.length>=g.seats.length-1){g.last=[];g.lastCombo=null;g.passes=[];g.turn=g.lastPlayer;g.message='Vòng mới: người đánh trước tiếp tục';} else nextTurn(g); return {ok:true}; }
     if(command.type!=='play' || !Array.isArray(command.cards) || !command.cards.length || command.cards.length>10) return {ok:false,error:'invalid_move'};
     const hand=g.hands[i]; if(new Set(command.cards).size!==command.cards.length || !command.cards.every(c=>hand.includes(c))) return {ok:false,error:'cards_not_in_hand'};
     const combo=samCombo(command.cards); if(!combo || !beats(combo,g.lastCombo)) return {ok:false,error:'invalid_combo'};
@@ -61,7 +77,7 @@ function act(r, p, command) {
   if(v==='V'){if(g.seats.length===2) steps=2; else g.direction*=-1;} else if(v==='S') steps=2; else if(v==='D'||v==='F'){const count=v==='D'?2:4; for(let k=0;k<count;k++){if(!g.draw.length)g.draw=shuffle(g.discard.splice(0));if(g.draw.length)g.hands[next].push(g.draw.pop());}steps=2;}
   if(!h.length) endGame(g,i); else nextTurn(g,steps); return {ok:true};
 }
-function botMove(r) { const g=r.game; if(!g||g.winner>=0)return; const p=g.seats[g.turn]; if(!p.bot)return; const h=g.hands[g.turn]; if(g.type==='sam'){const sorted=h.slice().sort((a,b)=>(a>>2)-(b>>2)); let cards=sorted.length? [sorted[0]]:[]; if(g.lastCombo){const found=sorted.find(c=>(c>>2)>g.lastCombo.high); if(found!==undefined)cards=[found]; else {act(r,p,{type:'pass'});send(r);return;}} act(r,p,{type:'play',cards});} else {const k=h.find(c=>c[0]==='W'||c[0]===g.color||c[1]===g.top[1]); if(k)act(r,p,{type:'play',card:k,color:'G'}); else act(r,p,{type:'draw'});} send(r); }
+function botMove(r) { const g=r.game; if(!g||g.winner>=0)return; const p=g.seats[g.turn]; if(!p || (!p.bot && p.connected))return; const h=g.hands[g.turn]; if(g.type==='sam'){const move=findSamMove(h,g.lastCombo); if(move)act(r,p,{type:'play',cards:move.cards}); else if(g.last.length)act(r,p,{type:'pass'}); else { const fallback=h.length?[h.slice().sort((a,b)=>(a>>2)-(b>>2))[0]]:[]; if(fallback.length)act(r,p,{type:'play',cards:fallback}); }} else {const k=h.find(c=>c[0]==='W'||c[0]===g.color||c[1]===g.top[1]); if(k)act(r,p,{type:'play',card:k,color:'G'}); else act(r,p,{type:'draw'});} send(r); }
 function scheduleBot(r) { if(r.botTimer)clearTimeout(r.botTimer); const g=r.game; if(g&&g.winner<0&&(g.seats[g.turn]?.bot||!g.seats[g.turn]?.connected))r.botTimer=setTimeout(()=>{botMove(r);scheduleBot(r);},700); }
 const server=http.createServer(async(req,res)=>{
   const url=new URL(req.url,'http://localhost');
