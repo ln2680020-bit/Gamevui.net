@@ -145,7 +145,7 @@ document.addEventListener('click',async e=>{
  const button=e.target.closest('[data-action]');if(!button)return;const action=button.dataset.action;
  try{
   setStatus('#account-status','');setStatus('#room-status','');
-  if(action==='toggle-ranking'){const content=$('#ranking-content'),opening=content.classList.contains('hidden');content.classList.toggle('hidden',!opening);button.setAttribute('aria-expanded',String(opening));button.textContent=opening?'Thu gọn ▴':'Mở bảng ▾';if(opening)await loadRanking();return;}\n  else if(action==='refresh-rooms'){await loadRooms();}
+  if(action==='toggle-ranking'){const content=$('#ranking-content'),opening=content.classList.contains('hidden');content.classList.toggle('hidden',!opening);button.setAttribute('aria-expanded',String(opening));button.textContent=opening?'Thu gọn ▴':'Mở bảng ▾';if(opening)await loadRanking();return;}\n  if(action==='refresh-rooms'){await loadRooms();}
   else if(action==='refresh-ranking'){await loadRanking();}
   else if(action==='login'||action==='register'){
    const email=$('#email').value.trim(),password=$('#password').value,nickname=$('#nickname').value.trim();
