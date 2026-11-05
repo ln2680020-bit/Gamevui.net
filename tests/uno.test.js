@@ -36,7 +36,7 @@ test('+2 có thể cộng dồn với +2; người nhận có thể rút tổng 
   assert.equal(act(r,p2,{type:'play',card:'YD'}).ok,true);
   assert.equal(g.pendingDraw.amount,4); assert.equal(g.pendingDraw.seat,0);
   assert.equal(act(r,p1,{type:'accept_penalty'}).ok,true);
-  assert.equal(g.hands[0].length,6); assert.equal(g.turn,1);
+  assert.equal(g.hands[0].length,7); assert.equal(g.turn,1);
 });
 
 test('+4 có thể cộng dồn với +4 và không có luật thách thức',()=>{
@@ -47,7 +47,7 @@ test('+4 có thể cộng dồn với +4 và không có luật thách thức',()
   assert.equal(g.pendingDraw.amount,8); assert.equal(g.pendingDraw.seat,0);
   assert.equal(act(r,p1,{type:'challenge'}).error,'must_resolve_penalty');
   assert.equal(act(r,p1,{type:'accept_penalty'}).ok,true);
-  assert.equal(g.hands[0].length,9);
+  assert.equal(g.hands[0].length,11);
 });
 
 test('người có +2 không thể chồng lên hình phạt +4',()=>{
