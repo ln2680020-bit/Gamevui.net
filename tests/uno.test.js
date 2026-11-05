@@ -16,7 +16,7 @@ function fixture({hands,top='B3',color=top[0],draw=['R5','G6','Y7','B8'],turn=0}
 test('bộ bài UNO cổ điển có đúng 108 lá',()=>assert.equal(unoDeck().length,108));
 
 test('rút 1 lá có thể đánh thì người chơi được đánh chính lá vừa rút',()=>{
-  const {r,g,p1}=fixture({hands:[['R1'],['G2']],top:'B3',color:'B',draw:['B5','G6']});
+  const {r,g,p1}=fixture({hands:[['R1'],['G2']],top:'B3',color:'B',draw:['G6','B5']});
   assert.equal(act(r,p1,{type:'draw'}).ok,true);
   assert.equal(g.turn,0);
   assert.equal(g.drawnCard,'B5');
