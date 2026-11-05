@@ -58,3 +58,10 @@ Không đưa mật khẩu hoặc URL database vào mã nguồn GitHub. Giữ `DA
 - Phòng lưu loại trò chơi; người chơi không thể bắt đầu nhầm Sâm trong phòng UNO hoặc ngược lại.
 - Tài khoản và hồ sơ hiện có được dùng chung. Chế độ khách vẫn được hỗ trợ.
 - Giao diện game hiện tại được phục vụ tại `/play`; các trò chơi chưa phát hành được đánh dấu “Sắp ra mắt”.
+
+
+## Trò chơi 2 người trên một thiết bị
+
+- Cờ caro: `/games/caro` — bàn 15×15, X/O thay phiên, phát hiện năm quân liên tiếp, hòa và đi lại.
+- Cờ vua: `/games/chess` — hai người đi quân Trắng/Đen trên cùng bàn, hỗ trợ nước đi hợp lệ, chiếu hết, hòa, nhập thành, bắt tốt qua đường và phong cấp. Luật cờ được xử lý bởi `chess.js` 0.10.3 (BSD-2-Clause), được đóng gói cục bộ trong `games/chess-engine.js`.
+- Hai chế độ chơi cùng máy không tạo phòng và không ghi kết quả vào bảng xếp hạng trực tuyến.
