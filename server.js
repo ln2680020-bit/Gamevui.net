@@ -4,6 +4,7 @@ const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
+const { WebSocketServer, WebSocket } = require('ws');
 const { databaseEnabled, initDatabase, getOrCreateProfile, saveProfile, globalLeaderboard, createAccount, loginAccount, getSessionUser, deleteSession, updateAccountProfile, publicProfile, closeDatabase } = require('./database');
 
 const PORT = Number(process.env.PORT || 3000);
@@ -19,10 +20,22 @@ const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = crypto
 const validCode = s => typeof s === 'string' && s.length > 0 && s.length <= LIMITS.roomCode && /^[a-zA-Z0-9_-]+$/.test(s);
 const json = (res, status, data) => { res.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }); res.end(JSON.stringify(data)); };
 function readBody(req) { return new Promise((resolve, reject) => { let data = ''; req.on('data', c => { data += c; if (Buffer.byteLength(data) > LIMITS.body) { reject(new Error('too_large')); req.destroy(); } }); req.on('end', () => { try { resolve(JSON.parse(data || '{}')); } catch { reject(new Error('bad_json')); } }); req.on('error', reject); }); }
-function roomFor(code, create = false) { let r = rooms.get(code); if (!r && create && rooms.size < LIMITS.maxRooms) { r = { code, players: new Map(), game: null, events: new Set(), emptyAt: null, chat: [], emotes: [], isPrivate:false, hostId:null }; rooms.set(code, r); } return r; }
+function roomFor(code, create = false) { let r = rooms.get(code); if (!r && create && rooms.size < LIMITS.maxRooms) { r = { code, players: new Map(), game: null, events: new Set(), voicePeers: new Map(), emptyAt: null, chat: [], emotes: [], isPrivate:false, hostId:null }; rooms.set(code, r); } return r; }
 function playerFor(r, token) { for (const p of r.players.values()) if (p.token === token) return p; return null; }
 async function authorizedPlayer(r, token, req) { const p=r&&playerFor(r,token);if(!p)return null;if(p.accountUserId){const user=await getSessionUser(readCookie(req,'samuno_session'));if(!user||user.id!==p.accountUserId)return null;}return p; }
 function transferHost(r, departingId) { if (r.hostId===departingId) r.hostId=[...r.players.values()].find(p=>p.id!==departingId&&!p.bot)?.id||[...r.players.values()].find(p=>p.id!==departingId)?.id||null; }
+function voiceIceServers(roomCode, player, now = Date.now(), env = process.env) {
+  const iceServers = [{ urls: ['stun:stun.l.google.com:19302'] }];
+  const urls = String(env.TURN_URLS || '').split(',').map(value => value.trim()).filter(Boolean);
+  const secret = String(env.TURN_SECRET || '');
+  if (urls.length && secret && player && player.id) {
+    const expires = Math.floor(now / 1000) + 60 * 60;
+    const username = expires + ':' + String(roomCode) + ':' + String(player.id);
+    const credential = crypto.createHmac('sha1', secret).update(username).digest('base64');
+    iceServers.push({ urls, username, credential });
+  }
+  return iceServers;
+}
 function publicState(r, token) {
   const me = playerFor(r, token), g = r.game;
   const players = [...r.players.values()].map(p => ({ id:p.id, name:p.name, avatar:p.avatar||'🎴', bot:p.bot, connected:p.connected, score:p.score||0, wins:p.wins||0, games:p.games||0, streak:p.streak||0, bestStreak:p.bestStreak||0, stats:p.stats||{} }));
@@ -228,6 +241,7 @@ const server=http.createServer(async(req,res)=>{
   if(req.method==='POST'&&url.pathname==='/api/join') { try {const d=await readBody(req); if(!validCode(d.room||'chung'))return json(res,400,{ok:false,error:'invalid_room'}); const r=roomFor(d.room||'chung',true);if(!r)return json(res,503,{ok:false,error:'room_limit'});let cleanName=String(d.name||'Người chơi').trim().slice(0,LIMITS.name)||'Người chơi';const account=await getSessionUser(readCookie(req,'samuno_session'));if(account?.nickname)cleanName=account.nickname;const allowedAvatars=['🎴','🦊','🐼','🐯','🐸','🐱','🐻','🐲','🦁','🐵','🐧','🐰'];const cleanAvatar=allowedAvatars.includes(account?.avatar)?account.avatar:(allowedAvatars.includes(d.avatar)?d.avatar:'🎴');let p=d.token&&playerFor(r,d.token);if(account?.id||(p?.accountUserId&&p.accountUserId!==account?.id))p=null;if(!p&&d.profileToken){const profile=await getOrCreateProfile(d.profileToken,cleanName,account?.id||null);if(profile)p=[...r.players.values()].find(x=>x.id===profile.id)||null;if(!p&&profile){if(r.players.size>=LIMITS.maxPlayers)return json(res,409,{ok:false,error:'room_full'});p={id:profile.id,token:id(),name:profile.name,avatar:cleanAvatar,connected:true,bot:false,score:profile.score||0,wins:profile.wins||0,games:profile.games||0,streak:profile.streak||0,bestStreak:profile.best_streak||0,stats:profile.stats||{},res:null};r.players.set(p.id,p);}}if(p&&p.reconnectExpired&&r.game&&r.game.winner<0)return json(res,409,{ok:false,error:'reconnect_expired'});if(!p){if(r.players.size>=LIMITS.maxPlayers)return json(res,409,{ok:false,error:'room_full'});p={id:id(),token:id(),name:cleanName,avatar:cleanAvatar,connected:true,bot:false,score:0,wins:0,games:0,streak:0,bestStreak:0,stats:{},res:null};r.players.set(p.id,p);}else{p.connected=true;p.disconnectedAt=null;p.reconnectUntil=null;p.reconnectExpired=false;p.name=cleanName;p.avatar=cleanAvatar;}if(account?.id)p.accountUserId=account.id;if(!r.hostId)r.hostId=p.id;r.emptyAt=null;json(res,200,{ok:true,token:p.token,id:p.id,state:publicState(r,p.token)});send(r);return;}catch{return json(res,400,{ok:false,error:'invalid_request'});} }
   if(req.method==='GET'&&url.pathname==='/api/leaderboard/global'){try{const mode=url.searchParams.get('mode')==='uno'?'uno':'sam';const rows=await globalLeaderboard(mode);if(rows===null)return json(res,503,{ok:false,error:'persistence_unavailable'});return json(res,200,{ok:true,mode,rows});}catch(error){console.error('Global leaderboard failed:',error.message);return json(res,503,{ok:false,error:'database_unavailable'});}}
   if(req.method==='GET'&&url.pathname==='/api/leaderboard') {const code=url.searchParams.get('room'),mode=url.searchParams.get('mode')==='uno'?'uno':'sam',r=roomFor(code,false);if(!r)return json(res,404,{ok:false,error:'room_not_found'});const rows=[...r.players.values()].filter(p=>!p.bot).map(p=>({name:p.name,wins:p.stats?.[mode]?.wins||0,games:p.stats?.[mode]?.games||0,points:p.stats?.[mode]?.points||0,streak:p.streak||0})).sort((a,b)=>b.wins-a.wins||b.points-a.points||b.streak-a.streak).slice(0,20);return json(res,200,{ok:true,mode,rows});}
+  if(req.method==='GET'&&url.pathname==='/api/voice/config') {const code=url.searchParams.get('room'),token=url.searchParams.get('token'),r=roomFor(code,false),p=r&&await authorizedPlayer(r,token,req);if(!p||p.bot)return json(res,401,{ok:false,error:'unauthorized'});return json(res,200,{ok:true,iceServers:voiceIceServers(code,p)});}
   if(req.method==='GET'&&url.pathname==='/api/events') {const code=url.searchParams.get('room'),token=url.searchParams.get('token'),r=roomFor(code,false),p=r&&await authorizedPlayer(r,token,req);if(!p)return json(res,401,{ok:false,error:'unauthorized'});if(p.reconnectExpired&&r.game&&r.game.winner<0)return json(res,409,{ok:false,error:'reconnect_expired'});res.writeHead(200,{'content-type':'text/event-stream; charset=utf-8','cache-control':'no-cache, no-transform','connection':'keep-alive','x-accel-buffering':'no'});res.write('retry: 2000\n\n');const entry={token,res};r.events.add(entry);p.res=res;p.connected=true;p.disconnectedAt=null;p.reconnectUntil=null;p.reconnectExpired=false;res.write(`data: ${JSON.stringify(publicState(r,token))}\n\n`);const timer=setInterval(async()=>{if(p.accountUserId){try{const active=await getSessionUser(readCookie(req,'samuno_session'));if(!active||active.id!==p.accountUserId){res.end();return;}}catch{res.end();return;}}if(!res.destroyed)res.write(': ping\n\n');},20000);res.on('close',()=>{clearInterval(timer);r.events.delete(entry);if(p.res===res){p.res=null;p.connected=false;p.disconnectedAt=Date.now();p.reconnectUntil=p.disconnectedAt+LIMITS.grace;setTimeout(()=>{if(!p.connected&&p.reconnectUntil&&Date.now()>=p.reconnectUntil){if(r.game&&r.game.winner<0){p.reconnectExpired=true;}else{r.players.delete(p.id);transferHost(r,p.id);}if(!r.players.size)r.emptyAt=Date.now();send(r);}},LIMITS.grace);send(r);scheduleBot(r);}});return; }
 
   if(req.method==='POST'&&url.pathname==='/api/chat') {try{const d=await readBody(req),r=roomFor(d.room,false),p=r&&await authorizedPlayer(r,d.token,req);if(!p)return json(res,401,{ok:false,error:'unauthorized'});const message=String(d.message||'').trim();if(!message)return json(res,400,{ok:false,error:'empty_message'});if(message.length>180)return json(res,400,{ok:false,error:'message_too_long'});r.chat=r.chat||[];r.chat.push({id:id(),name:p.name,text:message.slice(0,180),at:Date.now()});if(r.chat.length>40)r.chat.splice(0,r.chat.length-40);send(r);return json(res,200,{ok:true});}catch{return json(res,400,{ok:false,error:'invalid_request'});} }
@@ -238,8 +252,84 @@ const server=http.createServer(async(req,res)=>{
   if(req.method==='POST'&&url.pathname==='/api/lobby') {try{const d=await readBody(req),r=roomFor(d.room,false),p=r&&await authorizedPlayer(r,d.token,req);if(!p)return json(res,401,{ok:false,error:'unauthorized'});if(p.id!==r.hostId)return json(res,403,{ok:false,error:'host_only'});r.game=null;send(r);return json(res,200,{ok:true});}catch{return json(res,400,{ok:false,error:'invalid_request'});} }
   return json(res,404,{ok:false,error:'not_found'});
 });
-const cleanup=setInterval(()=>{const now=Date.now();for(const [code,r] of rooms){for(const [pid,p] of r.players)if(!p.connected&&!p.bot&&p.reconnectUntil&&now>=p.reconnectUntil){if(r.game&&r.game.winner<0)p.reconnectExpired=true;else{r.players.delete(pid);transferHost(r,pid);}}if(!r.players.size&&r.emptyAt&&now-r.emptyAt>LIMITS.ttl){if(r.botTimer)clearTimeout(r.botTimer);if(r.effectTimer)clearTimeout(r.effectTimer);rooms.delete(code);}}},30000);
+
+const voiceWss = new WebSocketServer({ noServer: true, maxPayload: 12000, perMessageDeflate: false });
+function voiceBroadcast(room, exceptId, payload) {
+  for (const [playerId, peer] of room.voicePeers || []) {
+    if (playerId === exceptId || peer.readyState !== WebSocket.OPEN) continue;
+    try { peer.send(JSON.stringify(payload)); } catch {}
+  }
+}
+server.on('upgrade', (req, socket, head) => {
+  let url;
+  try { url = new URL(req.url, 'http://localhost'); } catch { socket.destroy(); return; }
+  if (url.pathname !== '/api/voice') { socket.destroy(); return; }
+  const code = url.searchParams.get('room') || '';
+  const token = url.searchParams.get('token') || '';
+  const room = roomFor(code, false);
+  if (!room || !token) { socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n'); socket.destroy(); return; }
+  authorizedPlayer(room, token, req).then(player => {
+    if (!player || player.bot || !player.connected) {
+      socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+      socket.destroy();
+      return;
+    }
+    voiceWss.handleUpgrade(req, socket, head, ws => {
+      const previous = room.voicePeers.get(player.id);
+      if (previous && previous !== ws) previous.close(4001, 'Reconnected');
+      room.voicePeers.set(player.id, ws);
+      ws.voiceRoom = room;
+      ws.voicePlayer = player;
+      ws.voiceWindowStarted = Date.now();
+      ws.voiceMessageCount = 0;
+      const peers = [...room.voicePeers.entries()]
+        .filter(([id, peer]) => id !== player.id && peer.readyState === WebSocket.OPEN)
+        .map(([id]) => { const p = room.players.get(id); return p ? { id, name: p.name } : null; })
+        .filter(Boolean);
+      ws.send(JSON.stringify({ type: 'voice:peers', self: { id: player.id, name: player.name }, peers }));
+      voiceBroadcast(room, player.id, { type: 'voice:peer-joined', peer: { id: player.id, name: player.name } });
+      ws.on('message', raw => {
+        const now = Date.now();
+        if (now - ws.voiceWindowStarted > 10000) { ws.voiceWindowStarted = now; ws.voiceMessageCount = 0; }
+        if (++ws.voiceMessageCount > 80) { ws.close(1008, 'Rate limit'); return; }
+        let message;
+        try { message = JSON.parse(raw.toString()); } catch { return; }
+        if (!message || typeof message !== 'object') return;
+        if (message.type === 'voice:speaking') {
+          voiceBroadcast(room, player.id, { type: 'voice:speaking', from: { id: player.id, name: player.name }, speaking: message.speaking === true });
+          return;
+        }
+        if (!['offer', 'answer', 'ice-candidate'].includes(message.type)) return;
+        const targetId = typeof message.to === 'string' ? message.to.slice(0, 80) : '';
+        const target = room.voicePeers.get(targetId);
+        if (!target || target.readyState !== WebSocket.OPEN || targetId === player.id) return;
+        let signal;
+        if (message.type === 'ice-candidate') {
+          const c = message.candidate;
+          if (c !== null && (!c || typeof c !== 'object' || typeof c.candidate !== 'string' || c.candidate.length > 2048)) return;
+          signal = { type: 'ice-candidate', candidate: c };
+        } else {
+          const d = message.description;
+          if (!d || d.type !== message.type || typeof d.sdp !== 'string' || d.sdp.length > 10000) return;
+          signal = { type: message.type, description: { type: d.type, sdp: d.sdp } };
+        }
+        try { target.send(JSON.stringify({ type: 'voice:signal', from: { id: player.id, name: player.name }, signal })); } catch {}
+      });
+      ws.on('close', () => {
+        if (room.voicePeers.get(player.id) !== ws) return;
+        room.voicePeers.delete(player.id);
+        voiceBroadcast(room, player.id, { type: 'voice:peer-left', peer: { id: player.id, name: player.name } });
+      });
+      ws.on('error', () => {});
+    });
+  }).catch(() => {
+    try { socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n'); } catch {}
+    socket.destroy();
+  });
+});
+
+const cleanup=setInterval(()=>{const now=Date.now();for(const [code,r] of rooms){for(const [pid,p] of r.players)if(!p.connected&&!p.bot&&p.reconnectUntil&&now>=p.reconnectUntil){if(r.game&&r.game.winner<0)p.reconnectExpired=true;else{r.players.delete(pid);transferHost(r,pid);}}if(!r.players.size&&r.emptyAt&&now-r.emptyAt>LIMITS.ttl){if(r.botTimer)clearTimeout(r.botTimer);if(r.effectTimer)clearTimeout(r.effectTimer);for(const peer of r.voicePeers.values())peer.close(1001,'Room expired');r.voicePeers.clear();rooms.delete(code);}}},30000);
 cleanup.unref();
-function shutdown(){clearInterval(cleanup);for(const r of rooms.values()){if(r.botTimer)clearTimeout(r.botTimer);if(r.turnTimer)clearTimeout(r.turnTimer);if(r.effectTimer)clearTimeout(r.effectTimer);for(const e of r.events)e.res.end();}server.close(async()=>{try{await closeDatabase();}catch{}process.exit(0);});}
+function shutdown(){clearInterval(cleanup);for(const r of rooms.values()){for(const peer of r.voicePeers.values())peer.close(1001,'Server shutdown');r.voicePeers.clear();if(r.botTimer)clearTimeout(r.botTimer);if(r.turnTimer)clearTimeout(r.turnTimer);if(r.effectTimer)clearTimeout(r.effectTimer);for(const e of r.events)e.res.end();}server.close(async()=>{try{await closeDatabase();}catch{}process.exit(0);});}
 if (require.main === module) { initDatabase().then(()=>{server.listen(PORT,()=>console.log(`Sam & UNO server listening on ${PORT}; persistent profiles: ${databaseEnabled()}`));}).catch(error=>{console.error('Database initialization failed:',error.message);process.exit(1);}); process.on('SIGTERM',shutdown); process.on('SIGINT',shutdown); }
-module.exports={LIMITS,samCombo,beats,canFinishSam,findSamMove,chooseUnoMove,endGame,publicState,rooms,server,act,unoDeck,unoCardPoints};
+module.exports={LIMITS,samCombo,beats,canFinishSam,findSamMove,chooseUnoMove,endGame,publicState,rooms,server,act,unoDeck,unoCardPoints,voiceIceServers};

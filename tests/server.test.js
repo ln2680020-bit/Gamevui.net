@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { LIMITS, samCombo, beats, canFinishSam, findSamMove, endGame, publicState, rooms, act } = require('../server');
+const { LIMITS, samCombo, beats, canFinishSam, findSamMove, endGame, publicState, rooms, act, voiceIceServers } = require('../server');
 test('Sâm nhận diện bộ cùng hạng',()=>assert.deepEqual(samCombo([12,13,14]),{kind:'set',size:3,high:3}));
 test('Sâm nhận diện sảnh liên tiếp',()=>assert.deepEqual(samCombo([12,16,20]),{kind:'run',size:3,high:5}));
 test('Sâm từ chối tổ hợp không hợp lệ',()=>assert.equal(samCombo([12,20,28]),null));
@@ -41,3 +41,6 @@ test('trạng thái phòng nhận diện đúng chủ phòng',()=>{const a={id:'
 test('Bot Sâm ưu tiên đánh tổ hợp dài khi mở vòng',()=>{const move=findSamMove([12,16,20,24,28],null);assert.equal(move.cards.length,5);assert.equal(move.combo.kind,'run');});
 
 test('thời gian giữ chỗ khi mất kết nối là 120 giây',()=>assert.equal(LIMITS.grace,120000));
+
+test('Voice Chat chỉ trả STUN công khai khi chưa cấu hình TURN',()=>{const servers=voiceIceServers('ROOM1',{id:'player1'},1700000000000,{});assert.deepEqual(servers,[{urls:['stun:stun.l.google.com:19302']}]);});
+test('TURN dùng thông tin xác thực tạm thời ký bằng secret máy chủ',()=>{const servers=voiceIceServers('ROOM1',{id:'player1'},1700000000000,{TURN_URLS:'turn:relay.example:3478?transport=udp,turns:relay.example:5349',TURN_SECRET:'test-secret'});assert.equal(servers.length,2);assert.deepEqual(servers[1].urls,['turn:relay.example:3478?transport=udp','turns:relay.example:5349']);assert.match(servers[1].username,/^1700003600:ROOM1:player1$/);assert.ok(servers[1].credential.length>10);});
