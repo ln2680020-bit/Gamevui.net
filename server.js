@@ -4,7 +4,7 @@ const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
-const { databaseEnabled, initDatabase, getOrCreateProfile, saveProfile, globalLeaderboard, createAccount, loginAccount, getSessionUser, deleteSession, updateAccountProfile, publicProfile } = require('./database');
+const { databaseEnabled, initDatabase, getOrCreateProfile, saveProfile, globalLeaderboard, createAccount, loginAccount, getSessionUser, deleteSession, updateAccountProfile, publicProfile, closeDatabase } = require('./database');
 
 const PORT = Number(process.env.PORT || 3000);
 const rooms = new Map();
