@@ -9,7 +9,7 @@ const SESSION_DAYS = 30;
 function databaseEnabled() { return !!process.env.DATABASE_URL; }
 function tokenHash(token) { return crypto.createHash('sha256').update(String(token)).digest('hex'); }
 function cleanEmail(value) { return String(value || '').trim().toLowerCase(); }
-function cleanName(value) { return String(value || '').trim().replace(/\\s+/g, ' ').slice(0, 24) || 'Người chơi'; }
+function cleanName(value) { return String(value || '').trim().replace(/\s+/g, ' ').slice(0, 24) || 'Người chơi'; }
 async function passwordHash(password) {
   const salt = crypto.randomBytes(16);
   const derived = await scrypt(String(password), salt, 64, { N: 16384, r: 8, p: 1, maxmem: 64 * 1024 * 1024 });
@@ -19,7 +19,7 @@ async function passwordMatches(password, stored) {
   const parts = String(stored || '').split('$');
   if (parts.length !== 6 || parts[0] !== 'scrypt') return false;
   const [, n, r, p, saltHex, hashHex] = parts;
-  if (!/^\\d+$/.test(n) || !/^\\d+$/.test(r) || !/^\\d+$/.test(p) || !/^[a-f0-9]{32}$/.test(saltHex) || !/^[a-f0-9]{128}$/.test(hashHex)) return false;
+  if (!/^\d+$/.test(n) || !/^\d+$/.test(r) || !/^\d+$/.test(p) || !/^[a-f0-9]{32}$/.test(saltHex) || !/^[a-f0-9]{128}$/.test(hashHex)) return false;
   const expected = Buffer.from(hashHex, 'hex');
   const actual = Buffer.from(await scrypt(String(password), Buffer.from(saltHex, 'hex'), expected.length, { N: Number(n), r: Number(r), p: Number(p), maxmem: 64 * 1024 * 1024 }));
   return actual.length === expected.length && crypto.timingSafeEqual(actual, expected);
@@ -80,7 +80,7 @@ async function createAccount({ email, password, nickname, profileToken }) {
   if (!databaseEnabled()) throw new Error('persistence_unavailable');
   await initDatabase();
   const normalizedEmail = cleanEmail(email), cleanNickname = cleanName(nickname);
-  if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(normalizedEmail) || normalizedEmail.length > 254) throw new Error('invalid_email');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail) || normalizedEmail.length > 254) throw new Error('invalid_email');
   if (typeof password !== 'string' || password.length < 10 || password.length > 128) throw new Error('weak_password');
   if (typeof profileToken !== 'string' || profileToken.length < 32 || profileToken.length > 128) throw new Error('invalid_guest_profile');
   const hashedPassword = await passwordHash(password), sessionToken = newSessionToken(), client = await pool.connect();
