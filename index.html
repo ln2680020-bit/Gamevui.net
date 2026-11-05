@@ -13,7 +13,44 @@
 .live-ticker{position:relative;overflow:hidden;min-height:38px;margin:10px 0;padding:8px 12px;border:1px solid #e2bd6270;border-radius:12px;background:#061b11;color:#ffe9a3;font-weight:750}.ticker-message{display:inline-block;white-space:nowrap;animation:tickerScroll 9s linear both}@keyframes tickerScroll{from{transform:translateX(100%)}to{transform:translateX(-100%)}}
 .global-ticker{position:fixed;z-index:1000;top:18px;left:50%;transform:translateX(-50%);width:min(92vw,760px);overflow:hidden;padding:11px 16px;border:1px solid #f3d477;border-radius:14px;background:#071b12ee;color:#ffe9a3;font-weight:850;text-align:center;box-shadow:0 8px 28px #0009;pointer-events:none}.global-ticker .ticker-message{display:inline-block;white-space:nowrap;animation:tickerScroll 8s linear both}.uno-alert{position:fixed;z-index:1100;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;background:#0005;animation:unoFade 2.2s ease-out both}.uno-alert-card{padding:22px 34px;border:3px solid #ffe16b;border-radius:24px;background:radial-gradient(ellipse,#a92720,#4b0c13);color:#fff5c4;text-align:center;box-shadow:0 0 35px #ffcf33aa,0 12px 40px #0009;transform:rotate(-4deg);animation:unoPop 2.2s ease-out both}.uno-alert-title{font-size:clamp(54px,13vw,104px);font-weight:1000;line-height:1;text-shadow:0 5px 0 #7c1713,0 0 22px #ffcf33}.uno-alert-name{margin-top:10px;font-size:clamp(16px,4vw,24px);font-weight:850}@keyframes unoPop{0%{opacity:0;transform:scale(.25) rotate(-16deg)}18%{opacity:1;transform:scale(1.12) rotate(4deg)}30%{transform:scale(1) rotate(-4deg)}82%{opacity:1}100%{opacity:0;transform:scale(1.15) rotate(4deg)}}@keyframes unoFade{0%,78%{opacity:1}100%{opacity:0}}
 .last-player-label{margin:10px 0 6px;text-align:center;color:#ffe08a;font-weight:750}#sam-success{position:fixed;inset:18% 8% auto;z-index:20;pointer-events:none;text-align:center;font-size:clamp(26px,6vw,54px);font-weight:950;color:#ffe16b;text-shadow:0 0 22px #ff9d00;animation:samBurst 1.3s ease-out both}@keyframes samBurst{0%{opacity:0;transform:scale(.4) rotate(-8deg)}35%{opacity:1;transform:scale(1.15)}100%{opacity:0;transform:scale(1.35) translateY(-25px)}}
-.table-shake{animation:tableShake .35s ease-in-out}@keyframes tableShake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}.sound-settings{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}.sound-settings button{font-size:13px;padding:7px 9px}.sound-settings button.off{opacity:.5;filter:grayscale(1)}</style></head><body><main><h1>🃏 Sâm & UNO · Green Casino</h1><div id="app"><div class="panel">Đang tải…</div></div></main>
+.table-shake{animation:tableShake .35s ease-in-out}@keyframes tableShake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}.sound-settings{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}.sound-settings button{font-size:13px;padding:7px 9px}.sound-settings button.off{opacity:.5;filter:grayscale(1)}
+/* Mobile-first table layout and card motion */
+@keyframes cardFlyToTable{0%{opacity:0;transform:translateY(42px) scale(.72) rotate(-9deg)}65%{opacity:1;transform:translateY(-7px) scale(1.06) rotate(2deg)}100%{opacity:1;transform:translateY(0) scale(1) rotate(0)}}
+@keyframes drawPulse{0%{transform:scale(.65) translateY(20px);opacity:0}65%{transform:scale(1.08);opacity:1}100%{transform:scale(1);opacity:1}}
+.card{transform-origin:center bottom;backface-visibility:hidden}
+.hand .card{animation:dealIn .28s ease-out both}
+.hand .card:nth-child(2n){animation-delay:.025s}.hand .card:nth-child(3n){animation-delay:.05s}
+.felt .card{animation:cardFlyToTable .38s cubic-bezier(.2,.8,.2,1) both}
+.action-fx{position:fixed;inset:0;z-index:1200;display:flex;align-items:center;justify-content:center;pointer-events:none;background:radial-gradient(ellipse at center,#0007,transparent 68%);animation:fxBackdrop 1.65s ease-out both}
+.action-fx-inner{min-width:min(76vw,330px);padding:22px 28px;border:3px solid #ffe17a;border-radius:26px;background:linear-gradient(145deg,#163d2b,#07170f);box-shadow:0 0 0 5px #ffffff16,0 0 42px #f6cf56aa,0 16px 44px #000b;text-align:center;color:#fff4c4;animation:drawPulse 1.55s cubic-bezier(.2,.8,.2,1) both}
+.action-fx-symbol{font-size:clamp(58px,15vw,100px);font-weight:1000;line-height:1.05;text-shadow:0 5px 0 #0007,0 0 24px #ffe17a}
+.action-fx-label{font-size:clamp(16px,4vw,23px);font-weight:900;letter-spacing:1px;margin-top:8px}
+.action-fx-sub{font-size:14px;color:#dce9d8;margin-top:5px}
+@keyframes fxBackdrop{0%,78%{opacity:1}100%{opacity:0}}
+@media(max-width:700px){
+ body{font-size:14px}main{padding:8px 8px calc(18px + env(safe-area-inset-bottom))}h1{font-size:19px;margin:2px 0 8px}
+ .panel{padding:10px;margin:8px 0;border-radius:13px}.row{gap:6px;margin:7px 0}
+ button{padding:9px 10px;font-size:13px;min-height:40px}input{min-width:0;max-width:100%;padding:9px 10px;font-size:14px}
+ .turn-overview{gap:5px;margin:6px 0;padding:7px}.turn-overview span{font-size:11px;padding:5px 6px}
+ .seat{font-size:11px;padding:6px 7px}.felt{min-height:112px;padding:12px 8px;border-width:5px;border-radius:18px;gap:6px}
+ .card{width:clamp(43px,11vw,56px);height:clamp(65px,17vw,82px);font-size:16px;margin-right:-10px;border-radius:8px}
+ .hand{min-height:110px;padding:42px 5px 8px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin}
+ .card.selected{transform:translateY(-30px)!important}.hand .card.selected:hover{transform:translateY(-30px)!important}
+ .chat-controls input{flex:1 1 58%;min-width:0}.emote-row button{min-height:36px;padding:4px 7px;font-size:18px}
+ .chat-list{max-height:120px}.history-list{max-height:110px}.profile-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .global-ticker{top:calc(7px + env(safe-area-inset-top));padding:9px 10px;font-size:13px;width:94vw}
+ .action-fx-inner{min-width:70vw;padding:18px 20px}.sound-settings button{min-height:34px}
+}
+@media(max-width:700px) and (orientation:landscape){
+ main{max-width:none;padding:5px 10px}.panel{padding:7px;margin:5px 0}h1{font-size:16px;margin:0 0 4px}
+ .turn-overview{margin:3px 0;padding:4px}.row{margin:4px 0;gap:5px}.felt{min-height:82px;padding:6px;border-width:4px}
+ .hand{min-height:94px;padding:32px 5px 5px}.card{width:46px;height:66px;font-size:15px}
+ .card.selected{transform:translateY(-22px)!important}.hand .card.selected:hover{transform:translateY(-22px)!important}
+ .chat-box{padding:7px}.chat-list{max-height:65px}.history-list{max-height:65px}
+ .turn-overview span,.seat{font-size:10px}.global-ticker{top:4px;padding:5px 8px}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
+</style></head><body><main><h1>🃏 Sâm & UNO · Green Casino</h1><div id="app"><div class="panel">Đang tải…</div></div></main>
 <script>
 const $=s=>document.querySelector(s),esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));let room='',token='',state=null,source=null,selected=new Set(),selectedUno=[],wildCard=null,error='',soundEnabled=localStorage.getItem('samuno:sound')!=='off',lastWinnerKey='',sortMode='rank',hintedCard=null,lastChatId='',lastEmoteId='',lastHistoryId='';
 const soundPrefs={card:localStorage.getItem('samuno:s-card')!=='off',win:localStorage.getItem('samuno:s-win')!=='off',effect:localStorage.getItem('samuno:s-effect')!=='off'};
@@ -24,6 +61,13 @@ function playWinSound(){if(!soundEnabled||!soundPrefs.win)return;[523,659,784,10
 function showTicker(msg){let el=$('#global-ticker');if(!el){el=document.createElement('div');el.id='global-ticker';el.className='global-ticker';document.body.appendChild(el);}el.innerHTML='<span class="ticker-message"></span>';const item=el.firstChild;item.textContent=msg;item.style.animation='none';void item.offsetWidth;item.style.animation='tickerScroll 8s linear both';item.addEventListener('animationend',()=>{el.remove();},{once:true});}
 function showSamCallAlert(name){const old=$('#sam-call-alert');if(old)old.remove();const el=document.createElement('div');el.id='sam-call-alert';el.className='uno-alert';el.innerHTML='<div class="uno-alert-card" style="background:radial-gradient(ellipse,#176b3c,#07351e);border-color:#83f0aa"><div class="uno-alert-title" style="color:#a6ffc4;text-shadow:0 5px 0 #07552b,0 0 22px #5dff9a">🌿 SÂM!</div><div class="uno-alert-name"></div></div>';el.querySelector('.uno-alert-name').textContent=name+' đã báo Sâm';document.body.appendChild(el);el.addEventListener('animationend',()=>el.remove(),{once:true});playTone(660,.18,'effect');setTimeout(()=>playTone(990,.2,'effect'),140);setTimeout(()=>playTone(1320,.24,'effect'),280);}
 function showUnoAlert(name){const old=$('#uno-alert');if(old)old.remove();const el=document.createElement('div');el.id='uno-alert';el.className='uno-alert';el.innerHTML='<div class="uno-alert-card"><div class="uno-alert-title">🔴 UNO!</div><div class="uno-alert-name"></div></div>';el.querySelector('.uno-alert-name').textContent=name+' đã báo UNO';document.body.appendChild(el);el.addEventListener('animationend',()=>el.remove(),{once:true});playTone(880,.16,'effect');setTimeout(()=>playTone(1175,.2,'effect'),130);setTimeout(()=>playTone(1568,.24,'effect'),270);}
+
+function showActionFx(symbol,label,sub=''){const old=$('#action-fx');if(old)old.remove();const el=document.createElement('div');el.id='action-fx';el.className='action-fx';el.innerHTML='<div class="action-fx-inner"><div class="action-fx-symbol"></div><div class="action-fx-label"></div><div class="action-fx-sub"></div></div>';el.querySelector('.action-fx-symbol').textContent=symbol;el.querySelector('.action-fx-label').textContent=label;el.querySelector('.action-fx-sub').textContent=sub;document.body.appendChild(el);el.addEventListener('animationend',()=>el.remove(),{once:true});playTone(740,.12,'effect');setTimeout(()=>playTone(1040,.16,'effect'),90);}
+function showUnoCardEffect(g,h){const card=g?.top||'',kind=card[1],name=g?.names?.[h.seat]||'';if(kind==='D'||kind==='F'){const amount=g.pendingDraw?.amount||(kind==='D'?2:4);showActionFx('+'+amount,amount>4?'CỘNG DỒN BÀI PHẠT':'RÚT '+amount+' LÁ',name+' vừa đánh '+(kind==='D'?'+2':'+4'));}
+else if(kind==='S')showActionFx('⊘','CẤM LƯỢT',name+' đã bỏ lượt người tiếp theo');
+else if(kind==='V')showActionFx('⇄','ĐỔI CHIỀU',name+' đã đảo chiều chơi');
+else if(kind==='W')showActionFx('🌈','ĐỔI MÀU',name+' đã chọn màu '+({R:'ĐỎ',G:'XANH LÁ',B:'XANH DƯƠNG',Y:'VÀNG'})[g.color]);
+else showActionFx(card[1]||'🃏','ĐÁNH BÀI',name+' vừa đánh một lá bài');}
 function showSamSuccess(name){const old=$('#sam-success');if(old)old.remove();const el=document.createElement('div');el.id='sam-success';el.textContent='✨ BÁO SÂM THÀNH CÔNG · '+name+' ✨';document.body.appendChild(el);setTimeout(()=>el.remove(),1400)}
 function shakeTable(){const el=$('.felt');if(el){el.classList.remove('table-shake');void el.offsetWidth;el.classList.add('table-shake')}}
 function soundSettingsPanel(){return '<div class="sound-settings"><b>Âm thanh:</b><button data-sound="card" class="'+(soundPrefs.card?'':'off')+'">'+(soundPrefs.card?'🔊':'🔇')+' Đánh bài</button><button data-sound="win" class="'+(soundPrefs.win?'':'off')+'">'+(soundPrefs.win?'🔊':'🔇')+' Chiến thắng</button><button data-sound="effect" class="'+(soundPrefs.effect?'':'off')+'">'+(soundPrefs.effect?'🔊':'🔇')+' Hiệu ứng</button></div>'}
@@ -44,7 +88,7 @@ const hk=h?String(h.at)+':'+h.type+':'+h.text:'',ohk=oh?String(oh.at)+':'+oh.typ
 if(h&&hk!==ohk){
 if(h.type==='uno'){tickerMessage='🔴 '+h.text+'!';showUnoAlert(g.names[h.seat]||h.text.replace(/ báo UNO$/,''));}
 else if(h.type==='call'){tickerMessage='🌿 '+h.text+'!';if(g.type==='sam')showSamCallAlert(g.names[h.seat]||h.text.replace(/ báo Sâm$/,''));}
-else if(h.type==='play'&&og?.last?.length){const prev=og.last,wasTwo=prev.length===1&&(prev[0]>>2)===15,wasQuad=prev.length===4&&prev.every(x=>(x>>2)===(prev[0]>>2));if(wasTwo||wasQuad){doShake=true;tickerMessage='⚡ '+h.text+' · CHẶT BÀI!'}}
+else if(h.type==='play'){if(g.type==='uno'){showUnoCardEffect(g,h);if(g.pendingDraw?.amount>4){tickerMessage='⚡ '+h.text+' · TỔNG PHẠT +'+g.pendingDraw.amount;doShake=true;}}else{const n=g.last?.length||0;showActionFx(n+' LÁ','ĐÁNH BÀI SÂM',g.names[h.seat]||h.text);if(og?.last?.length){const prev=og.last,wasTwo=prev.length===1&&(prev[0]>>2)===15,wasQuad=prev.length===4&&prev.every(x=>(x>>2)===(prev[0]>>2));if(wasTwo||wasQuad){doShake=true;tickerMessage='⚡ '+h.text+' · CHẶT BÀI!'}}}}else if(h.type==='draw'){showActionFx('🂠','BỐC BÀI',h.text);}else if(h.type==='penalty'){showActionFx('+'+(g.pendingDraw?.amount||''),'NHẬN BÀI PHẠT',h.text);}
 }
 if(g&&g.winner>=0){const key=room+':'+g.winner+':'+(g.scores||[]).join(',');if(key!==lastWinnerKey){lastWinnerKey=key;playWinSound();tickerMessage='🏆 '+g.names[g.winner]+' đã chiến thắng!';if(g.type==='sam'&&g.samCalled===g.winner)showSamSuccess(g.names[g.winner]);}}else lastWinnerKey='';
 state=next;render();
