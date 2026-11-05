@@ -51,10 +51,28 @@ test('+4 có thể cộng dồn với +4 và không có luật thách thức',()
   assert.equal(g.hands[0].length,9);
 });
 
-test('người có +2 không thể chồng lên hình phạt +4',()=>{
-  const {r,g,p1,p2}=fixture({hands:[['WF','R1'],['YD','G1']],top:'R3',color:'R'});
+test('+2 có thể chồng lên +4 khác màu và cộng dồn thành 6 lá',()=>{
+  const {r,g,p1,p2}=fixture({hands:[['WF','R1','R2'],['YD','G1','G2']],top:'R3',color:'R',draw:['Y1','Y2','Y3','Y4','Y5','Y6']});
   assert.equal(act(r,p1,{type:'play',card:'WF',color:'B'}).ok,true);
-  assert.equal(act(r,p2,{type:'play',card:'YD'}).error,'must_stack_same_penalty');
+  assert.equal(g.pendingDraw.amount,4);
+  assert.equal(act(r,p2,{type:'play',card:'YD'}).ok,true);
+  assert.equal(g.pendingDraw.amount,6);
+  assert.equal(g.pendingDraw.seat,0);
+});
+
+test('+4 có thể chồng lên +2 khác màu và cộng dồn thành 6 lá',()=>{
+  const {r,g,p1,p2}=fixture({hands:[['RD','R1','R2'],['WF','G1','G2']],top:'R3',color:'R'});
+  assert.equal(act(r,p1,{type:'play',card:'RD'}).ok,true);
+  assert.equal(g.pendingDraw.amount,2);
+  assert.equal(act(r,p2,{type:'play',card:'WF',color:'Y'}).ok,true);
+  assert.equal(g.pendingDraw.amount,6);
+  assert.equal(g.pendingDraw.seat,0);
+});
+
+test('không thể chồng lá thường lên hình phạt +',()=>{
+  const {r,g,p1,p2}=fixture({hands:[['RD','R1','R2'],['Y5','G1','G2']],top:'R3',color:'R'});
+  assert.equal(act(r,p1,{type:'play',card:'RD'}).ok,true);
+  assert.equal(act(r,p2,{type:'play',card:'Y5'}).error,'must_stack_draw_card');
 });
 
 test('phải báo UNO trước khi đánh lá thứ hai; người khác bắt lỗi được +2 lá',()=>{
