@@ -18,7 +18,7 @@ function playerFor(r, token) { for (const p of r.players.values()) if (p.token =
 function publicState(r, token) {
   const g = r.game; if (!g) return { room: r.code, players: [...r.players.values()].map(p => ({ id: p.id, name: p.name, bot: p.bot, connected: p.connected, score: p.score || 0, wins:p.wins||0, games:p.games||0, streak:p.streak||0, bestStreak:p.bestStreak||0 })), game: null, chat: r.chat || [], emotes: r.emotes || [] };
   const me = playerFor(r, token); const i = me ? g.seats.findIndex(s => s.id === me.id) : -1;
-  return { room: r.code, players: [...r.players.values()].map(p => ({ id: p.id, name: p.name, bot: p.bot, connected: p.connected, score: p.score || 0 })), chat: r.chat || [], emotes: r.emotes || [], game: {
+  return { room: r.code, players: [...r.players.values()].map(p => ({ id: p.id, name: p.name, bot: p.bot, connected: p.connected, score: p.score || 0, wins:p.wins||0, games:p.games||0, streak:p.streak||0, bestStreak:p.bestStreak||0 })), chat: r.chat || [], emotes: r.emotes || [], game: {
     type: g.type, names: g.seats.map(s => s.name), counts: g.hands.map(h => h.length), turn: g.turn, winner: g.winner,
     last: g.last, message: g.message, scores: g.scores, direction: g.direction, color: g.color, top: g.top,
     hand: i >= 0 ? g.hands[i] : [], mySeat: i, myTurn: i >= 0 && i === g.turn && g.winner < 0,
