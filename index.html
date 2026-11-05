@@ -13,7 +13,7 @@
 .live-ticker{position:relative;overflow:hidden;min-height:38px;margin:10px 0;padding:8px 12px;border:1px solid #e2bd6270;border-radius:12px;background:#061b11;color:#ffe9a3;font-weight:750}.ticker-message{display:inline-block;white-space:nowrap;animation:tickerScroll 9s linear both}@keyframes tickerScroll{from{transform:translateX(100%)}to{transform:translateX(-100%)}}
 .global-ticker{position:fixed;z-index:1000;top:18px;left:50%;transform:translateX(-50%);width:min(92vw,760px);overflow:hidden;padding:11px 16px;border:1px solid #f3d477;border-radius:14px;background:#071b12ee;color:#ffe9a3;font-weight:850;text-align:center;box-shadow:0 8px 28px #0009;pointer-events:none}.global-ticker .ticker-message{display:inline-block;white-space:nowrap;animation:tickerScroll 8s linear both}.uno-alert{position:fixed;z-index:1100;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;background:#0005;animation:unoFade 2.2s ease-out both}.uno-alert-card{padding:22px 34px;border:3px solid #ffe16b;border-radius:24px;background:radial-gradient(ellipse,#a92720,#4b0c13);color:#fff5c4;text-align:center;box-shadow:0 0 35px #ffcf33aa,0 12px 40px #0009;transform:rotate(-4deg);animation:unoPop 2.2s ease-out both}.uno-alert-title{font-size:clamp(54px,13vw,104px);font-weight:1000;line-height:1;text-shadow:0 5px 0 #7c1713,0 0 22px #ffcf33}.uno-alert-name{margin-top:10px;font-size:clamp(16px,4vw,24px);font-weight:850}@keyframes unoPop{0%{opacity:0;transform:scale(.25) rotate(-16deg)}18%{opacity:1;transform:scale(1.12) rotate(4deg)}30%{transform:scale(1) rotate(-4deg)}82%{opacity:1}100%{opacity:0;transform:scale(1.15) rotate(4deg)}}@keyframes unoFade{0%,78%{opacity:1}100%{opacity:0}}
 .last-player-label{margin:10px 0 6px;text-align:center;color:#ffe08a;font-weight:750}#sam-success{position:fixed;inset:18% 8% auto;z-index:20;pointer-events:none;text-align:center;font-size:clamp(26px,6vw,54px);font-weight:950;color:#ffe16b;text-shadow:0 0 22px #ff9d00;animation:samBurst 1.3s ease-out both}@keyframes samBurst{0%{opacity:0;transform:scale(.4) rotate(-8deg)}35%{opacity:1;transform:scale(1.15)}100%{opacity:0;transform:scale(1.35) translateY(-25px)}}
-.table-shake{animation:tableShake .35s ease-in-out}@keyframes tableShake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}.sound-settings{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}.sound-settings button{font-size:13px;padding:7px 9px}.sound-settings button.off{opacity:.5;filter:grayscale(1)}
+.sound-settings{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}.sound-settings button{font-size:13px;padding:7px 9px}.sound-settings button.off{opacity:.5;filter:grayscale(1)}
 /* Mobile-first table layout and card motion */
 @keyframes cardFlyToTable{0%{opacity:0;transform:translateY(42px) scale(.72) rotate(-9deg)}65%{opacity:1;transform:translateY(-7px) scale(1.06) rotate(2deg)}100%{opacity:1;transform:translateY(0) scale(1) rotate(0)}}
 @keyframes drawPulse{0%{transform:scale(.65) translateY(20px);opacity:0}12%{transform:scale(1.08);opacity:1}88%{transform:scale(1);opacity:1}100%{transform:scale(.98);opacity:0}}
@@ -70,7 +70,7 @@ else if(kind==='V')showActionFx('⇄','ĐỔI CHIỀU',name+' đã đảo chiề
 else if(kind==='W')showActionFx('🌈','ĐỔI MÀU',name+' đã chọn màu '+({R:'ĐỎ',G:'XANH LÁ',B:'XANH DƯƠNG',Y:'VÀNG'})[g.color]);
 else showActionFx(card[1]||'🃏','ĐÁNH BÀI',name+' vừa đánh một lá bài');}
 function showSamSuccess(name){const old=$('#sam-success');if(old)old.remove();const el=document.createElement('div');el.id='sam-success';el.textContent='✨ BÁO SÂM THÀNH CÔNG · '+name+' ✨';document.body.appendChild(el);setTimeout(()=>el.remove(),1400)}
-function shakeTable(){const el=$('.felt');if(el){el.classList.remove('table-shake');void el.offsetWidth;el.classList.add('table-shake')}}
+
 function soundSettingsPanel(){return '<div class="sound-settings"><b>Âm thanh:</b><button data-sound="card" class="'+(soundPrefs.card?'':'off')+'">'+(soundPrefs.card?'🔊':'🔇')+' Đánh bài</button><button data-sound="win" class="'+(soundPrefs.win?'':'off')+'">'+(soundPrefs.win?'🔊':'🔇')+' Chiến thắng</button><button data-sound="effect" class="'+(soundPrefs.effect?'':'off')+'">'+(soundPrefs.effect?'🔊':'🔇')+' Hiệu ứng</button></div>'}
 function leaderboard(names,scores){return [...names].map((name,i)=>({name,score:scores?.[i]||0,i})).sort((a,b)=>b.score-a.score||a.i-b.i).slice(0,3).map((p,i)=>`<span class="rank-chip">${['🥇','🥈','🥉'][i]} ${esc(p.name)} · ${p.score}đ</span>`).join('');}
 async function api(path,data={}){const r=await fetch('/api/'+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...data,room,token})});const j=await r.json();if(!r.ok)throw Error(j.error||'request_failed');return j;}
@@ -79,7 +79,7 @@ if(source)source.close();
 source=new EventSource('/api/events?room='+encodeURIComponent(room)+'&token='+encodeURIComponent(token));
 source.onmessage=e=>{
 const next=JSON.parse(e.data),old=state,og=old?.game,g=next.game;
-let tickerMessage='',doShake=false;
+let tickerMessage='';
 const oldChat=old?.chat?.at(-1)?.id||'',newChat=next.chat?.at(-1);
 if(newChat&&newChat.id!==oldChat&&old)tickerMessage='💬 '+newChat.name+': '+newChat.text;
 const oldEmote=old?.emotes?.at(-1)?.id||'',newEmote=next.emotes?.at(-1);
@@ -89,12 +89,12 @@ const hk=h?String(h.at)+':'+h.type+':'+h.text:'',ohk=oh?String(oh.at)+':'+oh.typ
 if(h&&hk!==ohk){
 if(h.type==='uno'){tickerMessage='🔴 '+h.text+'!';showUnoAlert(g.names[h.seat]||h.text.replace(/ báo UNO$/,''));}
 else if(h.type==='call'){tickerMessage='🌿 '+h.text+'!';if(g.type==='sam')showSamCallAlert(g.names[h.seat]||h.text.replace(/ báo Sâm$/,''));}
-else if(h.type==='play'){if(g.type==='uno'){showUnoCardEffect(g,h);if(g.pendingDraw?.amount>4){tickerMessage='⚡ '+h.text+' · TỔNG PHẠT +'+g.pendingDraw.amount;doShake=true;}}else{const n=g.last?.length||0;showActionFx(n+' LÁ','ĐÁNH BÀI SÂM',g.names[h.seat]||h.text);if(og?.last?.length){const prev=og.last,wasTwo=prev.length===1&&(prev[0]>>2)===15,wasQuad=prev.length===4&&prev.every(x=>(x>>2)===(prev[0]>>2));if(wasTwo||wasQuad){doShake=true;tickerMessage='⚡ '+h.text+' · CHẶT BÀI!'}}}}else if(h.type==='draw'){showActionFx('🂠','BỐC BÀI',h.text);}else if(h.type==='penalty'){const penalty=h.text.match(/rút (\\d+) lá/i);showActionFx(penalty?'+'+penalty[1]:'🂠','NHẬN BÀI PHẠT',h.text);}
+else if(h.type==='play'){if(g.type==='uno'){showUnoCardEffect(g,h);if(g.pendingDraw?.amount>4){tickerMessage='⚡ '+h.text+' · TỔNG PHẠT +'+g.pendingDraw.amount;}}else{const n=g.last?.length||0;showActionFx(n+' LÁ','ĐÁNH BÀI SÂM',g.names[h.seat]||h.text);if(og?.last?.length){const prev=og.last,wasTwo=prev.length===1&&(prev[0]>>2)===15,wasQuad=prev.length===4&&prev.every(x=>(x>>2)===(prev[0]>>2));if(wasTwo||wasQuad){tickerMessage='⚡ '+h.text+' · CHẶT BÀI!'}}}}else if(h.type==='draw'){showActionFx('🂠','BỐC BÀI',h.text);}else if(h.type==='penalty'){const penalty=h.text.match(/rút (\\d+) lá/i);showActionFx(penalty?'+'+penalty[1]:'🂠','NHẬN BÀI PHẠT',h.text);}
 }
 if(g&&g.winner>=0){const key=room+':'+g.winner+':'+(g.scores||[]).join(',');if(key!==lastWinnerKey){lastWinnerKey=key;playWinSound();tickerMessage='🏆 '+g.names[g.winner]+' đã chiến thắng!';if(g.type==='sam'&&g.samCalled===g.winner)showSamSuccess(g.names[g.winner]);}}else lastWinnerKey='';
 state=next;render();
 if(tickerMessage)showTicker(tickerMessage);
-if(doShake){shakeTable();playTone(190,.16,'effect')}
+
 
 };
 source.onerror=()=>{error='Mất kết nối tạm thời. Đang thử kết nối lại…';render()};
