@@ -21,7 +21,7 @@ function publicState(r, token) {
   return { room: r.code, players: [...r.players.values()].map(p => ({ id: p.id, name: p.name, bot: p.bot, connected: p.connected, score: p.score || 0, wins:p.wins||0, games:p.games||0, streak:p.streak||0, bestStreak:p.bestStreak||0 })), chat: r.chat || [], emotes: r.emotes || [], game: {
     type: g.type, names: g.seats.map(s => s.name), counts: g.hands.map(h => h.length), turn: g.turn, winner: g.winner, matchWinner:g.matchWinner??-1, targetPoints:500, roundPoints:g.roundPoints||0,
     last: g.last, message: g.message, scores: g.scores, direction: g.direction, color: g.color, top: g.top,
-    hand: i >= 0 ? g.hands[i] : [], mySeat: i, myTurn: i >= 0 && i === g.turn && g.winner < 0,
+    hand: i >= 0 ? g.hands[i] : [], mySeat: i, myTurn: i >= 0 && i === g.turn && g.winner < 0 && !(g.turnLockUntil>Date.now()), turnLocked: !!(g.turnLockUntil>Date.now()), turnLockUntil:g.turnLockUntil||0,
     samCalled: g.samCalled, passes: g.passes, history:g.history||[], turnDeadline:g.turnDeadline||0,
     drawnCardSeat:g.drawnCardSeat??-1, drawnCard:g.drawnCardSeat===i?g.drawnCard:null,
     unoPendingSeat:g.unoPendingSeat??-1, unoCalled:g.unoCalledSeat===g.unoPendingSeat,
@@ -30,6 +30,8 @@ function publicState(r, token) {
 }
 function send(r) { for (const entry of r.events) { const p = playerFor(r, entry.token); if (!p || !entry.res.writable || entry.res.destroyed) continue; try { entry.res.write(`data: ${JSON.stringify(publicState(r, entry.token))}\n\n`); } catch {} } }
 function nextTurn(g, steps = 1) { const n = g.seats.length; g.turn = (g.turn + g.direction * steps % n + n) % n; }
+function delayTurn(r,g,seat){g.pendingTurn=seat;g.turnLockUntil=Date.now()+3000;g.turnDeadline=g.turnLockUntil+25000;if(r.effectTimer)clearTimeout(r.effectTimer);r.effectTimer=setTimeout(()=>{if(r.game!==g||g.winner>=0)return;g.turn=g.pendingTurn;delete g.pendingTurn;g.turnLockUntil=0;g.turnDeadline=Date.now()+25000;send(r);scheduleBot(r);},3000);}
+function delayNextTurn(r,g,steps=1){const n=g.seats.length;delayTurn(r,g,(g.turn+g.direction*steps%n+n)%n);}
 function makeSamDeck() { const d = []; for (let rank = 3; rank <= 15; rank++) for (let suit = 0; suit < 4; suit++) d.push(rank * 4 + suit); return shuffle(d); }
 function samCombo(cards) { if (!Array.isArray(cards) || !cards.length) return null; const ranks = cards.map(c => c >> 2).sort((a,b) => a-b); if (ranks.every(x => x === ranks[0])) return { kind: 'set', size: ranks.length, high: ranks[0] }; if (ranks.length >= 3 && ranks[ranks.length-1] < 15 && ranks.every((x,i) => i === 0 || x === ranks[i-1] + 1)) return { kind: 'run', size: ranks.length, high: ranks.at(-1) }; return null; }
 function beats(a,b) {
@@ -83,6 +85,7 @@ function drawCards(g, seat, count) {
 function unoCanPlay(card,g) { return card[0]==='W'||card[0]===g.color||card[1]===g.top[1]; }
 function act(r, p, command) {
   const g=r.game; if(!g || g.winner>=0) return {ok:false,error:'no_active_game'};
+  if(g.turnLockUntil>Date.now()) return {ok:false,error:'effect_in_progress'};
   const i=g.seats.findIndex(s=>s.id===p.id); if(i<0) return {ok:false,error:'not_in_game'};
   if(g.type==='uno') {
     if(command.type==='catch_uno') {
@@ -120,11 +123,11 @@ function act(r, p, command) {
         g.discard.push(g.top);g.top=card;g.color=card[0]==='W'&&'RGBY'.includes(command.color)?command.color:card[0];
         pd.amount+=card[1]==='D'?2:4;pd.type=card[1];pd.offender=i;pd.seat=(i+g.direction+g.seats.length)%g.seats.length;
         g.drawnCardSeat=-1;g.drawnCard=null;addHistory(g,`${p.name} chồng ${card} · tổng phạt ${pd.amount} lá`,i,'play');
-        if(!h.length){g.pendingDraw=null;endGame(g,i);}else{nextTurn(g);g.turnDeadline=Date.now()+25000;g.message=`Cộng dồn ${pd.amount} lá phạt!`;}return {ok:true};
+        if(!h.length){g.pendingDraw=null;endGame(g,i);}else{g.message=`Cộng dồn ${pd.amount} lá phạt!`;delayNextTurn(r,g);}return {ok:true};
       }
       if(command.type!=='accept_penalty') return {ok:false,error:'must_resolve_penalty'};
       drawCards(g,i,pd.amount);addHistory(g,`${p.name} rút ${pd.amount} lá phạt`,i,'penalty');
-      g.pendingDraw=null;g.turn=i;nextTurn(g);g.turnDeadline=Date.now()+25000;g.message=`${p.name} rút ${pd.amount} lá phạt và mất lượt`;return {ok:true};
+      g.pendingDraw=null;g.message=`${p.name} rút ${pd.amount} lá phạt và mất lượt`;delayNextTurn(r,g);return {ok:true};
     }
     if(command.type==='draw') {
       if(g.drawnCardSeat===i) return {ok:false,error:'already_drew'};
@@ -132,12 +135,12 @@ function act(r, p, command) {
       const drawn=g.hands[i][g.hands[i].length-1];
       addHistory(g,`${p.name} bốc 1 lá`,i,'draw');
       if(drawn&&unoCanPlay(drawn,g)) {g.drawnCardSeat=i;g.drawnCard=drawn;g.message='Lá vừa rút có thể đánh: bạn được chọn đánh hoặc bỏ lượt.';}
-      else {g.drawnCardSeat=-1;g.drawnCard=null;nextTurn(g);g.message='Lá vừa rút không đánh được; lượt chuyển tiếp.';}
-      g.turnDeadline=Date.now()+25000;return {ok:true};
+      else {g.drawnCardSeat=-1;g.drawnCard=null;g.message='Lá vừa rút không đánh được; lượt chuyển tiếp.';}
+      delayNextTurn(r,g,g.drawnCardSeat===i?0:1);return {ok:true};
     }
     if(command.type==='pass_drawn') {
       if(g.drawnCardSeat!==i) return {ok:false,error:'cannot_pass'};
-      g.drawnCardSeat=-1;g.drawnCard=null;nextTurn(g);g.turnDeadline=Date.now()+25000;g.message=`${p.name} bỏ lượt sau khi bốc bài`;return {ok:true};
+      g.drawnCardSeat=-1;g.drawnCard=null;g.message=`${p.name} bỏ lượt sau khi bốc bài`;delayNextTurn(r,g);return {ok:true};
     }
     if(command.type!=='play'||(!Array.isArray(command.cards)&&typeof command.card!=='string')) return {ok:false,error:'invalid_move'};
     const h=g.hands[i],cards=Array.isArray(command.cards)?command.cards:[command.card],card=cards[0];
@@ -159,24 +162,24 @@ function act(r, p, command) {
     else if(v==='D'){g.pendingDraw={seat:next,amount:2,type:'D',offender:i};steps=1;}
     else if(v==='F'){g.pendingDraw={seat:next,amount:4,type:'F',offender:i};steps=1;}
     if(!h.length){endGame(g,i);g.pendingDraw=null;}
-    else {nextTurn(g,steps);g.turnDeadline=Date.now()+25000;}
+    else {delayNextTurn(r,g,steps);}
     return {ok:true};
   }
   if(i!==g.turn) return {ok:false,error:'not_your_turn'};
   if(g.type==='sam') {
     if(command.type==='call_sam') { if(g.last.length || g.samCalled>=0) return {ok:false,error:'cannot_call_sam'}; g.samCalled=i; g.message=`${p.name} báo Sâm!`;addHistory(g,`${p.name} báo Sâm`,i,'call');g.turnDeadline=Date.now()+25000; send(r); return {ok:true}; }
-    if(command.type==='pass') { if(!g.last.length || !g.lastCombo || g.lastPlayer<0) return {ok:false,error:'cannot_pass'}; if(g.passes.includes(i)) return {ok:false,error:'already_passed'}; g.passes.push(i);addHistory(g,`${p.name} bỏ lượt`,i,'pass'); if(g.passes.length>=g.seats.length-1){g.last=[];g.lastCombo=null;g.passes=[];g.turn=g.lastPlayer;g.message='Vòng mới: người đánh trước tiếp tục';} else nextTurn(g);g.turnDeadline=Date.now()+25000; return {ok:true}; }
+    if(command.type==='pass') { if(!g.last.length || !g.lastCombo || g.lastPlayer<0) return {ok:false,error:'cannot_pass'}; if(g.passes.includes(i)) return {ok:false,error:'already_passed'}; g.passes.push(i);addHistory(g,`${p.name} bỏ lượt`,i,'pass'); let target;if(g.passes.length>=g.seats.length-1){g.last=[];g.lastCombo=null;g.passes=[];target=g.lastPlayer;g.message='Vòng mới: người đánh trước tiếp tục';} else target=(g.turn+g.direction+g.seats.length)%g.seats.length;delayTurn(r,g,target); return {ok:true}; }
     if(command.type!=='play' || !Array.isArray(command.cards) || !command.cards.length || command.cards.length>10) return {ok:false,error:'invalid_move'};
     const hand=g.hands[i]; if(new Set(command.cards).size!==command.cards.length || !command.cards.every(c=>hand.includes(c))) return {ok:false,error:'cards_not_in_hand'};
     const combo=samCombo(command.cards); if(!combo || !beats(combo,g.lastCombo)) return {ok:false,error:'invalid_combo'};
     if(!canFinishSam(command.cards,hand)) return {ok:false,error:hand.length===command.cards.length?'cannot_finish_with_two':'cannot_leave_two_alone'};
     g.hands[i]=hand.filter(c=>!command.cards.includes(c));addHistory(g,`${p.name} đánh ${command.cards.length} lá`,i,'play'); g.last=[...command.cards].sort((a,b)=>a-b); g.lastCombo=combo; g.lastPlayer=i; g.passes=[]; g.message=`${p.name} đã đánh bài`;
-    if(!g.hands[i].length) endGame(g,i); else nextTurn(g); return {ok:true};
+    if(!g.hands[i].length) endGame(g,i); else delayNextTurn(r,g); return {ok:true};
   }
   return {ok:false,error:'invalid_move'};
 }
 function botMove(r) { const g=r.game; if(!g||g.winner>=0)return; const p=g.seats[g.turn]; if(!p || (!p.bot && p.connected))return; const h=g.hands[g.turn]; if(g.type==='sam'){const move=findSamMove(h,g.lastCombo); if(move)act(r,p,{type:'play',cards:move.cards}); else if(g.last.length)act(r,p,{type:'pass'}); else { const fallback=h.length?[h.slice().sort((a,b)=>(a>>2)-(b>>2))[0]]:[]; if(fallback.length){const remaining=h.filter(card=>!fallback.includes(card));if(remaining.length===1&&(remaining[0]>>2)===15){const alternative=h.find(card=>card!==(fallback[0])&&((h.filter(x=>x!==card).length!==1)||((h.find(x=>x!==card)>>2)!==15)));if(alternative!==undefined)act(r,p,{type:'play',cards:[alternative]});else {g.message=`${p.name} không thể đánh lá 2 cuối cùng; lượt được chuyển tiếp.`;addHistory(g,g.message,g.turn,'timeout');nextTurn(g);g.turnDeadline=Date.now()+25000;}}else act(r,p,{type:'play',cards:fallback});} }} else {if(g.pendingDraw){act(r,p,{type:'accept_penalty'});}else if(h.length===2&&g.unoCalledSeat!==g.turn){act(r,p,{type:'uno'});const k=h.find(c=>unoCanPlay(c,g));if(k)act(r,p,{type:'play',card:k,color:'G'});else act(r,p,{type:'draw'});}else if(g.drawnCardSeat===g.turn){const k=g.drawnCard;if(k&&unoCanPlay(k,g))act(r,p,{type:'play',card:k,color:'G'});else act(r,p,{type:'pass_drawn'});}else{const k=h.find(c=>unoCanPlay(c,g));if(k)act(r,p,{type:'play',card:k,color:'G'});else act(r,p,{type:'draw'});}} send(r); }
-function scheduleBot(r) { if(r.botTimer)clearTimeout(r.botTimer);if(r.turnTimer)clearTimeout(r.turnTimer); const g=r.game;if(!g||g.winner>=0)return;const deadline=g.turnDeadline||Date.now()+25000;r.turnTimer=setTimeout(()=>{if(!r.game||r.game!==g||g.winner>=0)return;const p=g.seats[g.turn];if(!p)return;if(g.type==='sam'){if(g.last.length)act(r,p,{type:'pass'});else{const move=findSamMove(g.hands[g.turn],null);if(move)act(r,p,{type:'play',cards:move.cards});else{g.message=`${p.name} hết thời gian; lượt được bỏ qua`;addHistory(g,g.message,g.turn,'timeout');nextTurn(g);g.turnDeadline=Date.now()+25000;}}}else{act(r,p,{type:'draw'});}send(r);scheduleBot(r);},Math.max(0,deadline-Date.now()));if(g.seats[g.turn]?.bot||!g.seats[g.turn]?.connected)r.botTimer=setTimeout(()=>{botMove(r);scheduleBot(r);},700); }
+function scheduleBot(r) { if(r.botTimer)clearTimeout(r.botTimer);if(r.turnTimer)clearTimeout(r.turnTimer);if(r.effectTimer)clearTimeout(r.effectTimer); const g=r.game;if(!g||g.winner>=0)return;const deadline=g.turnDeadline||Date.now()+25000;r.turnTimer=setTimeout(()=>{if(!r.game||r.game!==g||g.winner>=0)return;const p=g.seats[g.turn];if(!p)return;if(g.type==='sam'){if(g.last.length)act(r,p,{type:'pass'});else{const move=findSamMove(g.hands[g.turn],null);if(move)act(r,p,{type:'play',cards:move.cards});else{g.message=`${p.name} hết thời gian; lượt được bỏ qua`;addHistory(g,g.message,g.turn,'timeout');nextTurn(g);g.turnDeadline=Date.now()+25000;}}}else{act(r,p,{type:'draw'});}send(r);scheduleBot(r);},Math.max(0,deadline-Date.now()));if(g.seats[g.turn]?.bot||!g.seats[g.turn]?.connected)r.botTimer=setTimeout(()=>{botMove(r);scheduleBot(r);},Math.max(700,(g.turnLockUntil||0)-Date.now()+100)); }
 const server=http.createServer(async(req,res)=>{
   const url=new URL(req.url,'http://localhost');
   if(req.method==='GET'&&url.pathname==='/health')return json(res,200,{ok:true,service:'sam-uno',rooms:rooms.size,uptimeSeconds:Math.floor(process.uptime())});
@@ -192,8 +195,8 @@ const server=http.createServer(async(req,res)=>{
   if(req.method==='POST'&&url.pathname==='/api/lobby') {try{const d=await readBody(req),r=roomFor(d.room,false),p=r&&playerFor(r,d.token);if(!p)return json(res,401,{ok:false,error:'unauthorized'});r.game=null;send(r);return json(res,200,{ok:true});}catch{return json(res,400,{ok:false,error:'invalid_request'});} }
   return json(res,404,{ok:false,error:'not_found'});
 });
-const cleanup=setInterval(()=>{const now=Date.now();for(const [code,r] of rooms){for(const [pid,p] of r.players)if(!p.connected&&!p.bot&&p.disconnectedAt&&now-p.disconnectedAt>LIMITS.grace&&!r.game)r.players.delete(pid);if(!r.players.size&&r.emptyAt&&now-r.emptyAt>LIMITS.ttl){if(r.botTimer)clearTimeout(r.botTimer);rooms.delete(code);}}},30000);
+const cleanup=setInterval(()=>{const now=Date.now();for(const [code,r] of rooms){for(const [pid,p] of r.players)if(!p.connected&&!p.bot&&p.disconnectedAt&&now-p.disconnectedAt>LIMITS.grace&&!r.game)r.players.delete(pid);if(!r.players.size&&r.emptyAt&&now-r.emptyAt>LIMITS.ttl){if(r.botTimer)clearTimeout(r.botTimer);if(r.effectTimer)clearTimeout(r.effectTimer);rooms.delete(code);}}},30000);
 cleanup.unref();
-function shutdown(){clearInterval(cleanup);for(const r of rooms.values()){if(r.botTimer)clearTimeout(r.botTimer);if(r.turnTimer)clearTimeout(r.turnTimer);for(const e of r.events)e.res.end();}server.close(()=>process.exit(0));}
+function shutdown(){clearInterval(cleanup);for(const r of rooms.values()){if(r.botTimer)clearTimeout(r.botTimer);if(r.turnTimer)clearTimeout(r.turnTimer);if(r.effectTimer)clearTimeout(r.effectTimer);for(const e of r.events)e.res.end();}server.close(()=>process.exit(0));}
 if (require.main === module) { server.listen(PORT,()=>console.log(`Sam & UNO server listening on ${PORT}`)); process.on('SIGTERM',shutdown); process.on('SIGINT',shutdown); }
 module.exports={samCombo,beats,canFinishSam,findSamMove,endGame,publicState,rooms,server,act,unoDeck,unoCardPoints};
