@@ -20,7 +20,7 @@ test('rút 1 lá có thể đánh thì người chơi được đánh chính lá
   assert.equal(act(r,p1,{type:'draw'}).ok,true);
   assert.equal(g.turn,0);
   assert.equal(g.drawnCard,'B5');
-  assert.equal(act(r,p1,{type:'play',card:'G6',color:'G'}).error,'must_play_drawn_card');
+  assert.equal(act(r,p1,{type:'play',card:'R1',color:'R'}).error,'must_play_drawn_card');
   assert.equal(act(r,p1,{type:'play',card:'B5'}).ok,true);
   assert.equal(g.turn,1);
 });
@@ -35,6 +35,7 @@ test('rút 1 lá không đánh được thì lượt tự chuyển sang người
 test('+2 buộc người kế tiếp rút 2 lá và mất lượt, không cộng dồn',()=>{
   const {r,g,p1,p2}=fixture({hands:[['RD','B1'],['G1']],top:'R3',color:'R',draw:['Y1','Y2','Y3']});
   assert.equal(act(r,p1,{type:'play',card:'RD'}).ok,true);
+  assert.equal(act(r,p1,{type:'uno'}).ok,true);
   assert.equal(g.turn,1);
   assert.equal(g.pendingDraw.amount,2);
   assert.equal(act(r,p2,{type:'play',card:'G1'}).error,'must_resolve_penalty');
@@ -55,6 +56,7 @@ test('+4 có thể bị thách thức thành công nếu người đánh còn m�
 test('thách thức +4 thất bại khiến người thách thức rút 6 và mất lượt',()=>{
   const {r,g,p1,p2}=fixture({hands:[['WF','B4'],['G1']],top:'R3',color:'R',draw:['Y1','Y2','Y3','Y4','Y5','Y6','Y7']});
   assert.equal(act(r,p1,{type:'play',card:'WF',color:'G'}).ok,true);
+  assert.equal(act(r,p1,{type:'uno'}).ok,true);
   assert.equal(g.pendingDraw.offenderHadColor,false);
   assert.equal(act(r,p2,{type:'challenge'}).ok,true);
   assert.equal(g.hands[1].length,7);
