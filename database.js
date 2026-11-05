@@ -197,10 +197,10 @@ async function getOrCreateProfile(profileToken, name, userId = null) {
 async function saveProfile(player) {
   if (!pool || !player || player.bot) return false;
   await pool.query(`
-    UPDATE player_profiles SET name=$2,score=$3,wins=$4,games=$5,streak=$6,
-      best_streak=$7,stats=$8::jsonb,updated_at=NOW()
+    UPDATE player_profiles SET name=$2,avatar=$3,score=$4,wins=$5,games=$6,streak=$7,
+      best_streak=$8,stats=$9::jsonb,updated_at=NOW()
     WHERE id=$1
-  `, [player.id,player.name,player.score||0,player.wins||0,player.games||0,player.streak||0,player.bestStreak||0,JSON.stringify(player.stats||{})]);
+  `, [player.id,player.name,player.avatar||'🎴',player.score||0,player.wins||0,player.games||0,player.streak||0,player.bestStreak||0,JSON.stringify(player.stats||{})]);
   return true;
 }
 
