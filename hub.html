@@ -35,6 +35,7 @@ button,input{font:inherit;border-radius:12px}button{border:1px solid #ffffff24;b
 <button class="game soon" disabled><div class="game-icon">🧩</div><h3>2048</h3><p>Ghép ô số và phá kỷ lục, sắp ra mắt.</p><span class="tag soon-tag">SẮP RA MẮT</span></button>
 </section>
 <section class="panel rooms-panel" id="public-rooms-panel"><div class="room-toolbar"><div><h2>Phòng đang chờ</h2><div class="muted" id="room-count">Đang tải danh sách phòng…</div></div><div class="filters" role="group" aria-label="Lọc phòng"><button class="filter active" data-filter="all">Tất cả</button><button class="filter" data-filter="sam">Sâm</button><button class="filter" data-filter="uno">UNO</button><button class="filter" data-action="refresh-rooms">↻ Làm mới</button></div></div><div class="room-list" id="public-room-list"><div class="empty-rooms">Đang tải phòng công khai…</div></div></section>
+<section class="panel rooms-panel" id="ranking-panel"><div class="room-toolbar"><div><h2>🏆 Bảng xếp hạng toàn hệ thống</h2><div class="muted" id="ranking-caption">50 hồ sơ dẫn đầu theo thành tích</div></div><div class="filters"><button class="filter active" data-ranking="sam">Sâm</button><button class="filter" data-ranking="uno">UNO</button><button class="filter" data-action="refresh-ranking">↻ Làm mới</button></div></div><div id="ranking-list" class="room-list"><div class="empty-rooms">Đang tải bảng xếp hạng…</div></div><div id="public-profile" class="empty-rooms hidden" style="margin-top:12px;text-align:left"></div></section>
 <section class="lower">
 <div class="panel" id="room-panel">
 <h2 id="selected-title">Chọn Sâm hoặc UNO để tiếp tục</h2><div class="muted" id="selected-desc">Sau khi chọn trò chơi, bạn có thể tạo phòng mới hoặc tham gia phòng có sẵn.</div>
@@ -60,7 +61,7 @@ button,input{font:inherit;border-radius:12px}button{border:1px solid #ffffff24;b
 'use strict';
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let selectedGame='',account=null,guestMode=false,roomFilter='all',roomRefreshBusy=false;
+let selectedGame='',account=null,guestMode=false,roomFilter='all',roomRefreshBusy=false,rankingMode='sam',rankingBusy=false;
 function profileToken(){let value=localStorage.getItem('samuno:profile-token');if(!value){const b=new Uint8Array(32);crypto.getRandomValues(b);value=Array.from(b,x=>x.toString(16).padStart(2,'0')).join('');localStorage.setItem('samuno:profile-token',value);}return value;}
 function setStatus(id,message){$(id).textContent=message||'';}
 function selectGame(game){selectedGame=game;const label=game==='uno'?'UNO':'Sâm';$('#selected-title').textContent='Phòng '+label;$('#selected-desc').textContent='Tạo phòng '+label+' mới hoặc nhập mã phòng '+label+' do bạn bè gửi.';$('#room-actions').classList.remove('hidden');setStatus('#room-status','');}
@@ -85,6 +86,24 @@ function renderAccount(){
 }
 function explain(error){return ({email_exists:'Email này đã được đăng ký.',invalid_email:'Email chưa đúng định dạng.',weak_password:'Mật khẩu cần có ít nhất 10 ký tự.',invalid_credentials:'Email hoặc mật khẩu chưa đúng.',too_many_attempts:'Bạn đã thử quá nhiều lần. Hãy đợi 15 phút.',persistence_unavailable:'Máy chủ chưa bật lưu tài khoản.',wrong_game:'Mã phòng này thuộc trò chơi khác.',room_not_found:'Không tìm thấy phòng. Hãy kiểm tra lại mã.',room_full:'Phòng đã đủ người.',login_required:'Hãy đăng nhập để chỉnh sửa hồ sơ.'})[error]||error;}
 async function enterRoom(code){const clean=String(code||'').trim();if(!/^[a-zA-Z0-9_-]{1,20}$/.test(clean))throw new Error('invalid_room');const info=await api('/api/room/info?room='+encodeURIComponent(clean),{method:'GET',headers:{}});if(info.gameType!==selectedGame)throw new Error('wrong_game');const joined=await api('/api/join',{method:'POST',body:JSON.stringify({room:clean,game:selectedGame,name:account?.nickname||localStorage.getItem('samuno:hub-name')||'Người chơi',profileToken:profileToken()})});localStorage.setItem('samuno:'+clean,JSON.stringify({token:joined.token}));location.href='/play?room='+encodeURIComponent(clean)+'&game='+selectedGame;}
+async function loadRanking(){
+ if(rankingBusy)return;rankingBusy=true;
+ try{
+  const data=await api('/api/leaderboard/global?mode='+rankingMode,{method:'GET',headers:{}});
+  const rows=data.rows||[];$('#ranking-caption').textContent=(rows.length?rows.length+' người chơi':'Chưa có dữ liệu')+' · '+(rankingMode==='sam'?'Sâm':'UNO');
+  const list=$('#ranking-list');
+  if(!rows.length){list.innerHTML='<div class="empty-rooms">Chưa có thành tích cho trò chơi này.</div>';return;}
+  list.innerHTML=rows.slice(0,20).map((p,i)=>'<button class="room-card" style="text-align:left" data-profile-id="'+esc(p.id)+'"><div><strong>'+(i===0?'🥇':i===1?'🥈':i===2?'🥉':'#'+(i+1))+' · '+esc(p.name)+'</strong><small>'+Number(p.wins||0)+' thắng · '+Number(p.games||0)+' ván · '+Number(p.points||0)+' điểm</small></div><span>Hồ sơ ↗</span></button>').join('');
+ }catch(error){$('#ranking-caption').textContent='Không tải được bảng xếp hạng';$('#ranking-list').innerHTML='<div class="empty-rooms">Máy chủ chưa thể tải dữ liệu xếp hạng.</div>';}
+ finally{rankingBusy=false;}
+}
+async function showPublicProfile(id){
+ const panel=$('#public-profile');panel.classList.remove('hidden');panel.textContent='Đang tải hồ sơ…';
+ try{
+  const data=await api('/api/profile/'+encodeURIComponent(id),{method:'GET',headers:{}}),p=data.profile||{},stats=p.stats||{},sam=stats.sam||{},uno=stats.uno||{};
+  panel.innerHTML='<div style="display:flex;align-items:center;gap:12px"><span style="font-size:32px">'+esc(p.avatar||'🎴')+'</span><div><strong>'+esc(p.name||'Người chơi')+'</strong><div class="muted">Hồ sơ người chơi</div></div></div><div class="profile-stats"><div class="stat"><b>'+Number(p.wins||0)+'</b><small>CHIẾN THẮNG</small></div><div class="stat"><b>'+Number(p.games||0)+'</b><small>SỐ VÁN</small></div><div class="stat"><b>'+Number(p.score||0)+'</b><small>ĐIỂM</small></div></div><div class="game-stats">Sâm: '+Number(sam.wins||0)+' thắng / '+Number(sam.games||0)+' ván · UNO: '+Number(uno.wins||0)+' thắng / '+Number(uno.games||0)+' ván<br>Chuỗi thắng hiện tại: '+Number(p.streak||0)+' · Kỷ lục: '+Number(p.best_streak||0)+'</div>';
+ }catch(error){panel.textContent='Không thể tải hồ sơ người chơi này.';}
+}
 async function loadRooms(){
  if(roomRefreshBusy)return;roomRefreshBusy=true;
  try{
@@ -99,11 +118,14 @@ async function loadRooms(){
 $('#games').addEventListener('click',e=>{const card=e.target.closest('[data-game]');if(card&&!card.disabled)selectGame(card.dataset.game);});
 $('#public-room-list').addEventListener('click',async e=>{const button=e.target.closest('[data-join-room]');if(!button)return;try{selectedGame=button.dataset.game;await enterRoom(button.dataset.joinRoom);}catch(error){setStatus('#room-status',explain(error.message));}});
 document.querySelector('.filters').addEventListener('click',e=>{const button=e.target.closest('[data-filter]');if(!button)return;roomFilter=button.dataset.filter;document.querySelectorAll('[data-filter]').forEach(x=>x.classList.toggle('active',x===button));loadRooms();});
+document.querySelector('#ranking-panel .filters').addEventListener('click',e=>{const button=e.target.closest('[data-ranking]');if(!button)return;rankingMode=button.dataset.ranking;document.querySelectorAll('[data-ranking]').forEach(x=>x.classList.toggle('active',x===button));$('#public-profile').classList.add('hidden');loadRanking();});
+$('#ranking-list').addEventListener('click',e=>{const button=e.target.closest('[data-profile-id]');if(button)showPublicProfile(button.dataset.profileId);});
 document.addEventListener('click',async e=>{
  const button=e.target.closest('[data-action]');if(!button)return;const action=button.dataset.action;
  try{
   setStatus('#account-status','');setStatus('#room-status','');
   if(action==='refresh-rooms'){await loadRooms();}
+  else if(action==='refresh-ranking'){await loadRanking();}
   else if(action==='login'||action==='register'){
    const email=$('#email').value.trim(),password=$('#password').value,nickname=$('#nickname').value.trim();
    await api('/api/auth/'+(action==='login'?'login':'register'),{method:'POST',body:JSON.stringify({email,password,nickname,profileToken:profileToken()})});
@@ -124,7 +146,7 @@ document.addEventListener('click',async e=>{
  }catch(error){const message=explain(error.message);setStatus(action==='create'||action==='join'?'#room-status':'#account-status',message);}
 });
 api('/api/auth/me',{method:'GET',headers:{}}).then(data=>{account=data.user;renderAccount();}).catch(()=>{account=null;renderAccount();});
-loadRooms();
-setInterval(loadRooms,15000);
+loadRooms();loadRanking();
+setInterval(loadRooms,15000);setInterval(loadRanking,60000);
 </script>
 </body></html>
