@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { samCombo, beats, findSamMove, publicState, rooms } = require('../server');
+const { samCombo, beats, findSamMove, endGame, publicState, rooms } = require('../server');
 test('Sâm nhận diện bộ cùng hạng',()=>assert.deepEqual(samCombo([12,13,14]),{kind:'set',size:3,high:3}));
 test('Sâm nhận diện sảnh liên tiếp',()=>assert.deepEqual(samCombo([12,16,20]),{kind:'run',size:3,high:5}));
 test('Sâm từ chối tổ hợp không hợp lệ',()=>assert.equal(samCombo([12,20,28]),null));
@@ -12,3 +12,6 @@ test('trạng thái chỉ gửi bài của đúng người xem',()=>{const room=
 test('Bot chọn đủ đôi để chặn đôi',()=>{const move=findSamMove([24,25,28,29],{kind:'set',size:2,high:5});assert.deepEqual(move.cards,[24,25]);assert.equal(move.combo.high,6);});
 test('Bot chọn sảnh đủ số lá để chặn sảnh',()=>{const move=findSamMove([16,20,24,28],{kind:'run',size:3,high:4});assert.deepEqual(move.cards,[16,20,24]);assert.equal(move.combo.high,6);});
 test('Bot trả về null khi không có nước chặn hợp lệ',()=>assert.equal(findSamMove([12,13,14],{kind:'set',size:2,high:10}),null));
+
+test('chiến thắng cộng đúng 1 điểm và ghi nhận người thắng',()=>{const p={id:'p1',name:'A',score:2};const g={seats:[p],scores:[2],winner:-1,message:''};endGame(g,0);assert.equal(g.winner,0);assert.equal(p.score,3);assert.equal(g.scores[0],3);assert.match(g.message,/\+1 điểm/);});
+test('không cộng điểm lần thứ hai cho cùng một ván',()=>{const p={id:'p1',name:'A',score:0};const g={seats:[p],scores:[0],winner:-1,message:''};endGame(g,0);endGame(g,0);assert.equal(p.score,1);});
