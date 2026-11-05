@@ -27,6 +27,7 @@
       this.volume = 0.85;
       this.error = '';
       this.root = null;
+      this.reconnectTimer = null;
       this.injectStyle();
       window.addEventListener('pagehide', () => this.leave());
     }
@@ -78,6 +79,7 @@
         const configUrl = '/api/voice/config?room=' + encodeURIComponent(room) + '&token=' + encodeURIComponent(token);
         const response = await fetch(configUrl, { credentials: 'same-origin', cache: 'no-store' });
         const config = await response.json();
+        if (this.room !== room || this.token !== token) return;
         if (!response.ok) throw new Error(config.error || 'Không thể xác thực kênh thoại.');
         this.iceServers = Array.isArray(config.iceServers) ? config.iceServers : this.iceServers;
         const scheme = location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -86,7 +88,17 @@
         socket.onopen = () => { this.error = ''; this.render(); };
         socket.onmessage = event => this.onMessage(event);
         socket.onerror = () => { this.error = 'Kênh thoại gặp lỗi kết nối. Trò chơi vẫn hoạt động bình thường.'; this.render(); };
-        socket.onclose = () => { if (this.socket === socket) { this.socket = null; this.render(); } };
+        socket.onclose = () => {
+          if (this.socket !== socket) return;
+          this.socket = null;
+          this.render();
+          if (this.room === room && this.token === token) {
+            clearTimeout(this.reconnectTimer);
+            this.reconnectTimer = setTimeout(() => {
+              if (this.room === room && this.token === token) this.enter(room, token);
+            }, 2500);
+          }
+        };
       } catch (error) {
         this.error = error.message || 'Không thể kết nối Voice Chat.';
         this.render();
@@ -238,6 +250,8 @@
       this.render();
     }
     leave() {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
       for (const id of [...this.peers.keys()]) this.removePeer(id);
       for (const track of this.stream?.getTracks() || []) track.stop();
       this.stream = null;

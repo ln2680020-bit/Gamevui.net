@@ -38,3 +38,14 @@ Không đưa mật khẩu hoặc URL database vào mã nguồn GitHub. Giữ `DA
 - Không có xu, ví, giá vật phẩm, thưởng xu hoặc cơ chế mở khóa.
 - Lựa chọn giao diện được lưu trong localStorage của trình duyệt hiện tại; đổi trình duyệt/thiết bị hoặc xóa dữ liệu trang web có thể làm mất lựa chọn.
 - Tùy chỉnh không ảnh hưởng luật chơi Sâm hoặc UNO.
+
+
+### Voice Chat (opt-in)
+
+- The microphone is off by default; players enable it with the in-room toggle.
+- Signaling is authenticated against the existing room membership and is isolated per room.
+- Audio is peer-to-peer WebRTC; the application does not record or store audio.
+- For broader network compatibility, configure a TURN relay on the hosting service using environment variables (never commit credentials):
+  - `TURN_URLS`: comma-separated TURN/TURNS URLs.
+  - `TURN_SECRET`: shared secret for time-limited TURN REST credentials.
+- Without TURN configuration, the client uses a public STUN server only; some restrictive networks may fail to connect.
