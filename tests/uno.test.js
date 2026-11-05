@@ -46,6 +46,8 @@ test('rút lá không đánh được thì tự chuyển lượt',()=>{
 
 test('+2 có thể cộng dồn với +2; người nhận có thể rút tổng số lá',()=>{
   const {r,g,p1,p2}=fixture({hands:[['RD','R1'],['YD','G1']],top:'R3',color:'R',draw:['Y1','Y2','Y3','Y4','Y5','Y6']});
+  // P1 starts with 2 cards, so call UNO before playing the +2.
+  assert.equal(actNow(r,p1,{type:'uno'}).ok,true);
   assert.equal(actNow(r,p1,{type:'play',card:'RD'}).ok,true);
   assert.equal(g.pendingDraw.amount,2);
   assert.equal(actNow(r,p2,{type:'play',card:'YD'}).ok,true);
