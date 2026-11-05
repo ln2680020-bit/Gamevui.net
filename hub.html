@@ -57,7 +57,7 @@ button,input{font:inherit;border-radius:12px}button{border:1px solid #ffffff24;b
 </section>
 <div class="foot">Gamevui.net · Bản thử nghiệm · Không có cược hoặc giao dịch tiền thật</div>
 </div>
-<section id="mode-modal" class="mode-modal hidden" role="dialog" aria-modal="true" aria-labelledby="mode-title"><div class="mode-dialog"><h2 id="mode-title">Chọn chế độ chơi</h2><p id="mode-description">Chọn cách bạn muốn chơi trò này.</p><button class="mode-choice" data-action="play-local"><span class="mode-icon">👥</span><span><strong>2 người trên 1 máy</strong><small>Hai người thay phiên chơi trên cùng màn hình, không cần tạo phòng.</small></span></button><button class="mode-choice" disabled><span class="mode-icon">🌐</span><span><strong>Chơi trực tuyến</strong><small>Đang được phát triển, sẽ bổ sung sau.</small></span></button><button class="mode-close" data-action="close-mode">Đóng</button></div></section>
+<section id="mode-modal" class="mode-modal hidden" role="dialog" aria-modal="true" aria-labelledby="mode-title"><div class="mode-dialog"><h2 id="mode-title">Chọn chế độ chơi</h2><p id="mode-description">Chọn cách bạn muốn chơi trò này.</p><button class="mode-choice" data-action="play-local"><span class="mode-icon">👥</span><span><strong>2 người trên 1 máy</strong><small>Hai người thay phiên chơi trên cùng màn hình, không cần tạo phòng.</small></span></button><button class="mode-choice" disabled><span class="mode-icon">🌐</span><span><strong>Chơi trực tuyến</strong><small>Đang được phát triển, sẽ bổ sung sau.</small></span></button><div id="caro-rules" class="hidden"><p style="margin:16px 0 6px;font-weight:800;color:var(--text)">Chọn luật chơi Cờ caro</p><button class="mode-choice" data-action="choose-caro-mode" data-mode="normal"><span class="mode-icon">🏁</span><span><strong>Bình thường</strong><small>Ai có 5 quân liên tiếp sẽ thắng ngay.</small></span></button><button class="mode-choice" data-action="choose-caro-mode" data-mode="infinite"><span class="mode-icon">♾️</span><span><strong>Vô hạn</strong><small>Chơi đến khi bàn cờ kín, sau đó đếm số đường 5 quân.</small></span></button></div><button class="mode-close" data-action="close-mode">Đóng</button></div></section>
 <script>
 'use strict';
 const $=s=>document.querySelector(s);
@@ -148,8 +148,8 @@ document.addEventListener('click',async e=>{
  try{
   setStatus('#account-status','');setStatus('#room-status','');
   if(action==='launch-2048'){window.location.href='/games/2048';return;}
-  if(action==='close-mode'){$('#mode-modal').classList.add('hidden');return;}
-  if(action==='play-local'){if(!['chess','caro'].includes(modeGame))return;window.location.href='/games/'+modeGame;return;}
+  if(action==='close-mode'){$('#mode-modal').classList.add('hidden');$('#mode-modal .mode-choice[data-action=play-local]').classList.remove('hidden');$('#caro-rules').classList.add('hidden');return;}
+  if(action==='play-local'){if(!['chess','caro'].includes(modeGame))return;if(modeGame==='caro'){$('#mode-title').textContent='⭕ Chọn luật chơi Cờ caro';$('#mode-description').textContent='Bạn muốn chơi Cờ caro theo luật nào?';$('#mode-modal .mode-choice[data-action=play-local]').classList.add('hidden');$('#caro-rules').classList.remove('hidden');return;}window.location.href='/games/'+modeGame;return;}\n   if(action==='choose-caro-mode'){const rule=button.dataset.mode;if(!['normal','infinite'].includes(rule))return;window.location.href='/games/caro?mode='+rule;return;}
   if(action==='toggle-ranking'){const content=$('#ranking-content'),opening=content.classList.contains('hidden');content.classList.toggle('hidden',!opening);button.setAttribute('aria-expanded',String(opening));button.textContent=opening?'Thu gọn ▴':'Mở bảng ▾';if(opening)await loadRanking();return;}
   if(action==='refresh-rooms'){await loadRooms();}
   else if(action==='refresh-ranking'){await loadRanking();}
