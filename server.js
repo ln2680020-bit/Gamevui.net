@@ -57,7 +57,7 @@ function publicState(r, token) {
   if (!g) return { ...base, game:null };
   const i = me ? g.seats.findIndex(s => s.id === me.id) : -1;
   if (g.type === 'caro') return { ...base, game:{ type:'caro', mode:g.mode, board:g.board, turn:g.turn, winner:g.winner, draw:!!g.draw, mySeat:i, myTurn:i>=0&&i===g.turn&&g.winner<0&&!g.draw, lines:g.lines||[], scoreX:g.scoreX||0, scoreO:g.scoreO||0, moveCount:g.moveCount||0, message:g.message||'' } };
-  if (g.type === 'chess') return { ...base, game:{ type:'chess', fen:g.chess.fen(), turn:g.turn, winner:g.winner, draw:!!g.draw, reason:g.reason||'', mySeat:i, myTurn:i>=0&&i===g.turn&&g.winner<0&&!g.draw, history:g.chess.history(), lastMove:g.lastMove||null, moveCount:g.moveCount||0 } };
+  if (g.type === 'chess') return { ...base, game:{ type:'chess', fen:g.chess.fen(), board:g.chess.board(), turn:g.turn, winner:g.winner, draw:!!g.draw, reason:g.reason||'', mySeat:i, myTurn:i>=0&&i===g.turn&&g.winner<0&&!g.draw, history:g.chess.history(), lastMove:g.lastMove||null, moveCount:g.moveCount||0 } };
   return { ...base, game: {
     type:g.type, names:g.seats.map(s=>s.name), counts:g.hands.map(h=>h.length), turn:g.turn, winner:g.winner, matchWinner:g.matchWinner??-1, targetPoints:500, roundPoints:g.roundPoints||0,
     last:g.last, message:g.message, scores:g.scores, direction:g.direction, color:g.color, top:g.top,
