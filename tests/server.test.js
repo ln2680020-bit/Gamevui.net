@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { samCombo, beats, canFinishSam, findSamMove, endGame, publicState, rooms } = require('../server');
+const { samCombo, beats, canFinishSam, findSamMove, endGame, publicState, rooms, act } = require('../server');
 test('Sâm nhận diện bộ cùng hạng',()=>assert.deepEqual(samCombo([12,13,14]),{kind:'set',size:3,high:3}));
 test('Sâm nhận diện sảnh liên tiếp',()=>assert.deepEqual(samCombo([12,16,20]),{kind:'run',size:3,high:5}));
 test('Sâm từ chối tổ hợp không hợp lệ',()=>assert.equal(samCombo([12,20,28]),null));
@@ -26,3 +26,6 @@ test('không cho phép đánh một lá 2 nếu sẽ để lại lá 2 cuối c�
 test('Bot không chọn lá 2 làm nước kết thúc',()=>assert.equal(findSamMove([60],null),null));
 
 test('hồ sơ người chơi giữ điểm, số ván thắng và chuỗi thắng',()=>{const p={id:'p1',name:'A',score:4,wins:3,games:5,streak:2,bestStreak:3};const room={code:'x',players:new Map([['p1',p]]),game:null};const state=publicState(room,'');assert.equal(state.players[0].score,4);assert.equal(state.players[0].wins,3);assert.equal(state.players[0].games,5);assert.equal(state.players[0].streak,2);assert.equal(state.players[0].bestStreak,3);});
+
+
+test('UNO khóa lượt trong thời gian hiệu ứng sau khi đánh bài',()=>{const a={id:'a',name:'A'},b={id:'b',name:'B'};const game={type:'uno',seats:[a,b],hands:[['R5','B1'],['G1']],turn:0,winner:-1,last:[],history:[],direction:1,color:'R',top:'R2',draw:[],discard:[],scores:[0,0],pendingDraw:null,drawnCardSeat:-1,unoPendingSeat:-1,unoCalledSeat:-1,turnDeadline:Date.now()+25000};const room={code:'lock-test',players:new Map([['a',a],['b',b]]),game,events:new Set()};const result=act(room,a,{type:'play',card:'R5'});assert.equal(result.ok,true);assert.equal(game.turn,0);assert.ok(game.turnLockUntil>Date.now());assert.equal(publicState(room,'').game.turnLocked,true);assert.equal(act(room,b,{type:'play',card:'G1'}).error,'effect_in_progress');clearTimeout(room.effectTimer);});
