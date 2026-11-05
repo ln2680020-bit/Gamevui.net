@@ -174,7 +174,7 @@ const messages=(state.chat||[]).map(m=>'<div class="chat-line"><b>'+esc(m.name)+
 const emotes=['😀','😂','😍','😮','😢','😎','👏','🔥','🎉','💪','🤔','❤️'];
 const buttons=emotes.map(x=>'<button data-emote="'+x+'">'+x+'</button>').join('');
 const recent=(state.emotes||[]).slice(-6).map(x=>'<span class="emote-pill">'+esc(x.name)+' '+x.emote+'</span>').join('');
-return '<div class="chat-box"><b>💬 Bình luận trong phòng</b><div class="chat-list">'+messages+'</div><div class="chat-controls"><input id="chat-message" maxlength="180" value='+esc(chatDraft)+'" placeholder="Viết bình luận..."><button data-action="chat-send">Gửi</button></div><div class="muted">Thả cảm xúc</div><div class="emote-row">'+buttons+'</div><div class="emote-feed">'+recent+'</div></div>';
+return '<div class="chat-box"><b>💬 Bình luận trong phòng</b><div class="chat-list">'+messages+'</div><div class="chat-controls"><input id="chat-message" maxlength="180" value="'+esc(chatDraft)+'" placeholder="Viết bình luận..."><button data-action="chat-send">Gửi</button></div><div class="muted">Thả cảm xúc</div><div class="emote-row">'+buttons+'</div><div class="emote-feed">'+recent+'</div></div>';
 }
 
 function localCombo(cards){if(!cards||!cards.length)return null;const ranks=cards.map(x=>x>>2).sort((a,b)=>a-b);if(ranks.every(x=>x===ranks[0]))return {kind:'set',size:ranks.length,high:ranks[0]};if(ranks.length>=3&&ranks.at(-1)<15&&ranks.every((x,i)=>i===0||x===ranks[i-1]+1))return {kind:'run',size:ranks.length,high:ranks.at(-1)};return null;}
