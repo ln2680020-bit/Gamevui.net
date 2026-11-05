@@ -20,7 +20,7 @@ function transferHost(r, departingId) { if (r.hostId===departingId) r.hostId=[..
 function publicState(r, token) {
   const me = playerFor(r, token), g = r.game;
   const players = [...r.players.values()].map(p => ({ id:p.id, name:p.name, bot:p.bot, connected:p.connected, score:p.score||0, wins:p.wins||0, games:p.games||0, streak:p.streak||0, bestStreak:p.bestStreak||0, stats:p.stats||{} }));
-  const base = { room:r.code, isPrivate:!!r.isPrivate, isHost:!!(me&&me.id===r.hostId), players, chat:r.chat||[], emotes:r.emotes||[] };
+  const base = { room:r.code, isPrivate:!!r.isPrivate, isHost:!!(me&&me.id===r.hostId), persistentProfiles:databaseEnabled(), players, chat:r.chat||[], emotes:r.emotes||[] };
   if (!g) return { ...base, game:null };
   const i = me ? g.seats.findIndex(s => s.id === me.id) : -1;
   return { ...base, game: {
