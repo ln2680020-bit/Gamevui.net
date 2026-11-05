@@ -1,6 +1,8 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const vm = require('node:vm');
 const { LIMITS, samCombo, beats, canFinishSam, findSamMove, endGame, publicState, rooms, act, voiceIceServers } = require('../server');
 test('Sâm nhận diện bộ cùng hạng',()=>assert.deepEqual(samCombo([12,13,14]),{kind:'set',size:3,high:3}));
 test('Sâm nhận diện sảnh liên tiếp',()=>assert.deepEqual(samCombo([12,16,20]),{kind:'run',size:3,high:5}));
@@ -49,3 +51,11 @@ test('Game Hub preserves the selected game type in room state',()=>{const a={id:
 
 
 test('danh sách phòng công khai chỉ hiển thị phòng chờ đúng trò chơi và chưa đầy',()=>{const {publicRooms,rooms,LIMITS}=require('../server');const code='public-list-test';const room={code,gameType:'sam',isPrivate:false,game:null,createdAt:10,hostId:'a',players:new Map([['a',{id:'a',name:'Host',avatar:'🦊',connected:true,bot:false}]])};rooms.set(code,room);try{const list=publicRooms('sam');assert.equal(list.length,1);assert.deepEqual(list[0],{room:code,gameType:'sam',hostName:'Host',hostAvatar:'🦊',playerCount:1,maxPlayers:LIMITS.maxPlayers,status:'waiting',createdAt:10});assert.equal(publicRooms('uno').length,0);room.isPrivate=true;assert.equal(publicRooms('sam').length,0);room.isPrivate=false;room.game={winner:-1};assert.equal(publicRooms('sam').length,0);}finally{rooms.delete(code);}});
+
+
+test('Game Hub inline JavaScript parses before serving interactive controls',()=>{
+  const html=fs.readFileSync(require.resolve('../hub.html'),'utf8');
+  const scripts=[...html.matchAll(/<script>([\\s\\S]*?)<\\/script>/g)];
+  assert.ok(scripts.length>0,'hub.html must contain its client script');
+  for(const script of scripts)new vm.Script(script[1],{filename:'hub.html'});
+});
