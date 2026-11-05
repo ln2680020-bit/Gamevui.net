@@ -4,8 +4,10 @@ const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
 const {
   getOrCreateProfile, createAccount, loginAccount, getSessionUser,
-  deleteSession, updateAccountProfile, publicProfile
+  deleteSession, updateAccountProfile, publicProfile, closeDatabase
 } = require('../database');
+
+test.after(async () => { await closeDatabase(); });
 
 test('tài khoản liên kết hồ sơ khách và chỉ công khai thông tin an toàn', { skip: !process.env.DATABASE_URL }, async () => {
   const profileToken = crypto.randomBytes(32).toString('hex');
@@ -34,5 +36,6 @@ test('tài khoản liên kết hồ sơ khách và chỉ công khai thông tin a
   assert.equal((await publicProfile(guest.id)).avatar, '🐼');
 
   await deleteSession(created.sessionToken);
+  await deleteSession(loggedIn.sessionToken);
   assert.equal(await getSessionUser(created.sessionToken), null);
 });
