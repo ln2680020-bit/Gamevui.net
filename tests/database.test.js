@@ -16,6 +16,7 @@ test('tài khoản liên kết hồ sơ khách và chỉ công khai thông tin a
   const created = await createAccount({ email, password: 'MatKhauThuNghiem123', nickname: 'Nguoi Choi', profileToken });
   assert.equal(created.profile.id, guest.id, 'giữ nguyên ID hồ sơ khách khi liên kết');
   assert.equal(created.profile.name, 'Nguoi Choi');
+  assert.equal(await getOrCreateProfile(profileToken, 'Nguoi Gia Mao'), null, 'guest token không được truy cập hồ sơ đã liên kết tài khoản');
 
   const session = await getSessionUser(created.sessionToken);
   assert.equal(session.email, email);
