@@ -55,7 +55,7 @@ test('danh sách phòng công khai chỉ hiển thị phòng chờ đúng trò c
 
 test('Game Hub inline JavaScript parses before serving interactive controls',()=>{
   const html=fs.readFileSync(require.resolve('../hub.html'),'utf8');
-  const scripts=[...html.matchAll(/<script>([\\s\\S]*?)<\\/script>/g)];
+  const scripts=[...html.matchAll(/<script>([\s\S]*?)<\/script>/g)];
   assert.ok(scripts.length>0,'hub.html must contain its client script');
   for(const script of scripts)new vm.Script(script[1],{filename:'hub.html'});
 });
