@@ -169,20 +169,26 @@ async function getOrCreateProfile(profileToken, name, userId = null) {
   await initDatabase();
   const hash = tokenHash(profileToken);
   if (userId) {
-    const existing = await pool.query('SELECT id,name,score,wins,games,streak,best_streak,stats FROM player_profiles WHERE user_id=$1', [userId]);
+    const existing = await pool.query('SELECT id,name,avatar,score,wins,games,streak,best_streak,stats FROM player_profiles WHERE user_id=$1', [userId]);
     if (existing.rows[0]) return existing.rows[0];
-    const created = await pool.query(`
-      INSERT INTO player_profiles (id,token_hash,user_id,name) VALUES ($1,$2,$3,$4)
-      ON CONFLICT (user_id) DO UPDATE SET updated_at=NOW()
-      RETURNING id,name,score,wins,games,streak,best_streak,stats
-    `, [crypto.randomBytes(18).toString('hex'),hash,userId,cleanName(name)]);
-    return created.rows[0];
+    try {
+      const created = await pool.query(`
+        INSERT INTO player_profiles (id,token_hash,user_id,name) VALUES ($1,$2,$3,$4)
+        RETURNING id,name,avatar,score,wins,games,streak,best_streak,stats
+      `, [crypto.randomBytes(18).toString('hex'),hash,userId,cleanName(name)]);
+      return created.rows[0];
+    } catch (error) {
+      if (error.code !== '23505') throw error;
+      const raced = await pool.query('SELECT id,name,avatar,score,wins,games,streak,best_streak,stats FROM player_profiles WHERE user_id=$1', [userId]);
+      if (raced.rows[0]) return raced.rows[0];
+      throw error;
+    }
   }
   const result = await pool.query(`
     INSERT INTO player_profiles (id, token_hash, name)
     VALUES ($1, $2, $3)
     ON CONFLICT (token_hash) DO UPDATE SET name = EXCLUDED.name, updated_at = NOW()
-    RETURNING id, name, score, wins, games, streak, best_streak, stats
+    RETURNING id, name, avatar, score, wins, games, streak, best_streak, stats
   `, [crypto.randomBytes(18).toString('hex'), hash, cleanName(name)]);
   return result.rows[0];
 }
