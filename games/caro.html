@@ -34,7 +34,7 @@ function onlineMode(){
   renderBoard(state.game,players);status(state.game.winner>=0||state.game.draw?'Ván đấu đã kết thúc. Chủ phòng có thể bắt đầu ván mới.':state.game.myTurn?'Đến lượt bạn.':'Đang chờ đối thủ đánh.');
  }
  if(!room||!token){status('Thiếu mã phòng hoặc mã xác thực. Hãy quay lại sảnh và vào phòng lại.');$('start-online').disabled=true;return;}
- $('copy-invite').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(room);status('Đã sao chép mã phòng. Hãy gửi mã này cho bạn bè để họ nhập tại sảnh.');}catch{status('Không thể sao chép tự động. Hãy sao chép địa chỉ trên thanh trình duyệt.');}});
+ $('copy-invite').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(room);status('Đã sao chép mã phòng. Hãy gửi mã này cho bạn bè để họ nhập tại sảnh.');}catch{window.prompt('Sao chép mã phòng Cờ caro:',room);status('Mã phòng: '+room);}});
  $('leave-online').addEventListener('click',()=>{if(source)source.close();location.href='/';});
  $('start-online').addEventListener('click',()=>post('start',{game:'caro'}).then(()=>status('Đã bắt đầu ván.')).catch(error=>status(error.message==='need_two_players'?'Cần đủ 2 người để bắt đầu.':'Không thể bắt đầu: '+error.message)));
  $('again').addEventListener('click',()=>{$('overlay').classList.add('hidden');if(latest?.isHost)post('start',{game:'caro'}).catch(error=>status(error.message));else status('Chờ chủ phòng bắt đầu ván mới.');});
