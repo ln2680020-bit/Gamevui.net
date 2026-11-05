@@ -16,7 +16,7 @@ function readBody(req) { return new Promise((resolve, reject) => { let data = ''
 function roomFor(code, create = false) { let r = rooms.get(code); if (!r && create && rooms.size < LIMITS.maxRooms) { r = { code, players: new Map(), game: null, events: new Set(), emptyAt: null }; rooms.set(code, r); } return r; }
 function playerFor(r, token) { for (const p of r.players.values()) if (p.token === token) return p; return null; }
 function publicState(r, token) {
-  const g = r.game; if (!g) return { room: r.code, players: [...r.players.values()].map(p => ({ id: p.id, name: p.name, bot: p.bot, connected: p.connected })), game: null };
+  const g = r.game; if (!g) return { room: r.code, players: [...r.players.values()].map(p => ({ id: p.id, name: p.name, bot: p.bot, connected: p.connected, score: p.score || 0 })), game: null };
   const me = playerFor(r, token); const i = me ? g.seats.findIndex(s => s.id === me.id) : -1;
   return { room: r.code, players: [...r.players.values()].map(p => ({ id: p.id, name: p.name, bot: p.bot, connected: p.connected })), game: {
     type: g.type, names: g.seats.map(s => s.name), counts: g.hands.map(h => h.length), turn: g.turn, winner: g.winner,
@@ -55,7 +55,7 @@ function startGame(r, type) {
   else { const d=unoDeck(); g.hands=seats.map(()=>d.splice(0,7)); g.draw=d; g.top=g.draw.pop(); while(g.top[0]==='W'){g.draw.unshift(g.top);g.top=g.draw.pop();} g.color=g.top[0]; }
   r.game=g; send(r); return true;
 }
-function endGame(g, winner) { g.winner=winner; g.message=`${g.seats[winner].name} thắng ván!`; }
+function endGame(g, winner) { if (!g || g.winner >= 0 || !g.seats[winner]) return; const player=g.seats[winner]; player.score=(player.score||0)+1; g.scores[winner]=player.score; g.winner=winner; g.message=`${player.name} thắng ván! +1 điểm`; }
 function act(r, p, command) {
   const g=r.game; if(!g || g.winner>=0) return {ok:false,error:'no_active_game'};
   const i=g.seats.findIndex(s=>s.id===p.id); if(i<0 || i!==g.turn) return {ok:false,error:'not_your_turn'};
@@ -95,4 +95,4 @@ const cleanup=setInterval(()=>{const now=Date.now();for(const [code,r] of rooms)
 cleanup.unref();
 function shutdown(){clearInterval(cleanup);for(const r of rooms.values()){if(r.botTimer)clearTimeout(r.botTimer);for(const e of r.events)e.res.end();}server.close(()=>process.exit(0));}
 if (require.main === module) { server.listen(PORT,()=>console.log(`Sam & UNO server listening on ${PORT}`)); process.on('SIGTERM',shutdown); process.on('SIGINT',shutdown); }
-module.exports={samCombo,beats,findSamMove,publicState,rooms,server};
+module.exports={samCombo,beats,findSamMove,endGame,publicState,rooms,server};
