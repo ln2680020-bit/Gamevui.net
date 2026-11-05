@@ -178,7 +178,7 @@ document.addEventListener('click',async e=>{
    if(!selectedGame)throw new Error('Hãy chọn Sâm hoặc UNO trước.');
    await enterRoom($('#room-code').value);
   }
- }catch(error){const message=explain(error.message);if(action==='create-caro-room'||action==='join-caro-room'){$('#caro-online-status').textContent=message;}else setStatus(action==='create'||action==='join'?'#room-status':'#account-status',message);}
+ }catch(error){const message=explain(error.message);if(action==='create-caro-room'||action==='join-caro-room'){$('#caro-online-status').textContent=message;}else if(action==='create-chess-room'||action==='join-chess-room'){$('#chess-online-status').textContent=message;}else setStatus(action==='create'||action==='join'?'#room-status':'#account-status',message);}
 });
 api('/api/auth/me',{method:'GET',headers:{}}).then(data=>{account=data.user;renderAccount();}).catch(()=>{account=null;renderAccount();});
 loadRooms();loadRanking();
