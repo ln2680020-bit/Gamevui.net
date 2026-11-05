@@ -35,13 +35,13 @@ function beats(a,b) {
   if (a.kind === 'set' && a.size === 4 && b.kind === 'set' && b.size === 1 && b.high === 15) return true;
   return a.kind === b.kind && a.size === b.size && a.high > b.high;
 }
+function canFinishSam(cards, hand) { return cards.length !== hand.length || !cards.some(card => (card >> 2) === 15); }
 function findSamMove(hand, lastCombo) {
   const cards = hand.slice().sort((a,b) => (a >> 2) - (b >> 2));
   let best = null;
   function visit(start, picked) {
     if (picked.length) {
-      const finishesWithTwo = picked.length === hand.length && picked.some(card => (card >> 2) === 15);
-      const combo = finishesWithTwo ? null : samCombo(picked);
+      const combo = canFinishSam(picked, hand) ? samCombo(picked) : null;
       if (combo && beats(combo, lastCombo)) {
         if (!best || picked.length < best.length || (picked.length === best.length && combo.high < best.combo.high)) best = { cards: picked.slice(), combo };
       }
@@ -71,7 +71,7 @@ function act(r, p, command) {
     if(command.type!=='play' || !Array.isArray(command.cards) || !command.cards.length || command.cards.length>10) return {ok:false,error:'invalid_move'};
     const hand=g.hands[i]; if(new Set(command.cards).size!==command.cards.length || !command.cards.every(c=>hand.includes(c))) return {ok:false,error:'cards_not_in_hand'};
     const combo=samCombo(command.cards); if(!combo || !beats(combo,g.lastCombo)) return {ok:false,error:'invalid_combo'};
-    if(command.cards.length===hand.length && command.cards.some(card=>(card>>2)===15)) return {ok:false,error:'cannot_finish_with_two'};
+    if(!canFinishSam(command.cards,hand)) return {ok:false,error:'cannot_finish_with_two'};
     g.hands[i]=hand.filter(c=>!command.cards.includes(c)); g.last=[...command.cards].sort((a,b)=>a-b); g.lastCombo=combo; g.lastPlayer=i; g.passes=[]; g.message=`${p.name} đã đánh bài`;
     if(!g.hands[i].length) endGame(g,i); else nextTurn(g); return {ok:true};
   }
@@ -102,4 +102,4 @@ const cleanup=setInterval(()=>{const now=Date.now();for(const [code,r] of rooms)
 cleanup.unref();
 function shutdown(){clearInterval(cleanup);for(const r of rooms.values()){if(r.botTimer)clearTimeout(r.botTimer);for(const e of r.events)e.res.end();}server.close(()=>process.exit(0));}
 if (require.main === module) { server.listen(PORT,()=>console.log(`Sam & UNO server listening on ${PORT}`)); process.on('SIGTERM',shutdown); process.on('SIGINT',shutdown); }
-module.exports={samCombo,beats,findSamMove,endGame,publicState,rooms,server};
+module.exports={samCombo,beats,canFinishSam,findSamMove,endGame,publicState,rooms,server};
