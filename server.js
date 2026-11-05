@@ -13,16 +13,19 @@ const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = crypto
 const validCode = s => typeof s === 'string' && s.length > 0 && s.length <= LIMITS.roomCode && /^[a-zA-Z0-9_-]+$/.test(s);
 const json = (res, status, data) => { res.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }); res.end(JSON.stringify(data)); };
 function readBody(req) { return new Promise((resolve, reject) => { let data = ''; req.on('data', c => { data += c; if (Buffer.byteLength(data) > LIMITS.body) { reject(new Error('too_large')); req.destroy(); } }); req.on('end', () => { try { resolve(JSON.parse(data || '{}')); } catch { reject(new Error('bad_json')); } }); req.on('error', reject); }); }
-function roomFor(code, create = false) { let r = rooms.get(code); if (!r && create && rooms.size < LIMITS.maxRooms) { r = { code, players: new Map(), game: null, events: new Set(), emptyAt: null, chat: [], emotes: [] }; rooms.set(code, r); } return r; }
+function roomFor(code, create = false) { let r = rooms.get(code); if (!r && create && rooms.size < LIMITS.maxRooms) { r = { code, players: new Map(), game: null, events: new Set(), emptyAt: null, chat: [], emotes: [], isPrivate:false, hostId:null }; rooms.set(code, r); } return r; }
 function playerFor(r, token) { for (const p of r.players.values()) if (p.token === token) return p; return null; }
 function publicState(r, token) {
-  const g = r.game; if (!g) return { room: r.code, players: [...r.players.values()].map(p => ({ id: p.id, name: p.name, bot: p.bot, connected: p.connected, score: p.score || 0, wins:p.wins||0, games:p.games||0, streak:p.streak||0, bestStreak:p.bestStreak||0 })), game: null, chat: r.chat || [], emotes: r.emotes || [] };
-  const me = playerFor(r, token); const i = me ? g.seats.findIndex(s => s.id === me.id) : -1;
-  return { room: r.code, players: [...r.players.values()].map(p => ({ id: p.id, name: p.name, bot: p.bot, connected: p.connected, score: p.score || 0, wins:p.wins||0, games:p.games||0, streak:p.streak||0, bestStreak:p.bestStreak||0 })), chat: r.chat || [], emotes: r.emotes || [], game: {
-    type: g.type, names: g.seats.map(s => s.name), counts: g.hands.map(h => h.length), turn: g.turn, winner: g.winner, matchWinner:g.matchWinner??-1, targetPoints:500, roundPoints:g.roundPoints||0,
-    last: g.last, message: g.message, scores: g.scores, direction: g.direction, color: g.color, top: g.top,
-    hand: i >= 0 ? g.hands[i] : [], mySeat: i, myTurn: i >= 0 && i === g.turn && g.winner < 0 && !(g.turnLockUntil>Date.now()), turnLocked: !!(g.turnLockUntil>Date.now()), turnLockUntil:g.turnLockUntil||0,
-    samCalled: g.samCalled, passes: g.passes, history:g.history||[], turnDeadline:g.turnDeadline||0,
+  const me = playerFor(r, token), g = r.game;
+  const players = [...r.players.values()].map(p => ({ id:p.id, name:p.name, bot:p.bot, connected:p.connected, score:p.score||0, wins:p.wins||0, games:p.games||0, streak:p.streak||0, bestStreak:p.bestStreak||0, stats:p.stats||{} }));
+  const base = { room:r.code, isPrivate:!!r.isPrivate, isHost:!!(me&&me.id===r.hostId), players, chat:r.chat||[], emotes:r.emotes||[] };
+  if (!g) return { ...base, game:null };
+  const i = me ? g.seats.findIndex(s => s.id === me.id) : -1;
+  return { ...base, game: {
+    type:g.type, names:g.seats.map(s=>s.name), counts:g.hands.map(h=>h.length), turn:g.turn, winner:g.winner, matchWinner:g.matchWinner??-1, targetPoints:500, roundPoints:g.roundPoints||0,
+    last:g.last, message:g.message, scores:g.scores, direction:g.direction, color:g.color, top:g.top,
+    hand:i>=0?g.hands[i]:[], mySeat:i, myTurn:i>=0&&i===g.turn&&g.winner<0&&!(g.turnLockUntil>Date.now()), turnLocked:!!(g.turnLockUntil>Date.now()), turnLockUntil:g.turnLockUntil||0,
+    samCalled:g.samCalled, passes:g.passes, history:g.history||[], turnDeadline:g.turnDeadline||0,
     drawnCardSeat:g.drawnCardSeat??-1, drawnCard:g.drawnCardSeat===i?g.drawnCard:null,
     unoPendingSeat:g.unoPendingSeat??-1, unoCalled:g.unoCalledSeat===g.unoPendingSeat,
     pendingDraw:g.pendingDraw?{seat:g.pendingDraw.seat,amount:g.pendingDraw.amount,type:g.pendingDraw.type}:null
@@ -69,7 +72,7 @@ function startGame(r, type) {
 }
 function addHistory(g,text,seat=-1,type='info'){g.history=g.history||[];g.history.push({text,seat,type,at:Date.now()});if(g.history.length>60)g.history.shift();}
 function unoCardPoints(card) { if(card[0]==='W') return 50; if(['S','V','D'].includes(card[1])) return 20; return Number(card[1])||0; }
-function endGame(g, winner) { if (!g || g.winner >= 0 || !g.seats[winner]) return; const player=g.seats[winner]; const points=g.type==='uno'?g.hands.reduce((sum,hand,index)=>sum+(index===winner?0:hand.reduce((n,card)=>n+unoCardPoints(card),0)),0):1; g.roundPoints=points; player.score=(player.score||0)+points;player.wins=(player.wins||0)+1;player.games=(player.games||0)+1;player.streak=(player.streak||0)+1;player.bestStreak=Math.max(player.bestStreak||0,player.streak);for(let i=0;i<g.seats.length;i++)if(i!==winner){g.seats[i].games=(g.seats[i].games||0)+1;g.seats[i].streak=0;} g.scores[winner]=player.score; g.winner=winner;g.matchWinner=player.score>=500?winner:-1;g.turnDeadline=0; g.message=g.matchWinner>=0?`${player.name} đạt ${player.score} điểm và trở thành NHÀ VÔ ĐỊCH!`:`${player.name} thắng ván! +${points} điểm`;addHistory(g,g.message,winner,g.matchWinner>=0?'champion':'winner'); }
+function endGame(g, winner) { if (!g || g.winner >= 0 || !g.seats[winner]) return; const player=g.seats[winner]; const points=g.type==='uno'?g.hands.reduce((sum,hand,index)=>sum+(index===winner?0:hand.reduce((n,card)=>n+unoCardPoints(card),0)),0):1; g.roundPoints=points; player.score=(player.score||0)+points;player.wins=(player.wins||0)+1;player.games=(player.games||0)+1;player.streak=(player.streak||0)+1;player.bestStreak=Math.max(player.bestStreak||0,player.streak);player.stats=player.stats||{};player.stats[g.type]=player.stats[g.type]||{wins:0,games:0,points:0};player.stats[g.type].wins++;player.stats[g.type].games++;player.stats[g.type].points+=points;for(let i=0;i<g.seats.length;i++)if(i!==winner){const loser=g.seats[i];loser.games=(loser.games||0)+1;loser.streak=0;loser.stats=loser.stats||{};loser.stats[g.type]=loser.stats[g.type]||{wins:0,games:0,points:0};loser.stats[g.type].games++;} g.scores[winner]=player.score; g.winner=winner;g.matchWinner=player.score>=500?winner:-1;g.turnDeadline=0; g.message=g.matchWinner>=0?`${player.name} đạt ${player.score} điểm và trở thành NHÀ VÔ ĐỊCH!`:`${player.name} thắng ván! +${points} điểm`;addHistory(g,g.message,winner,g.matchWinner>=0?'champion':'winner'); }
 function drawCards(g, seat, count) {
   for (let n=0;n<count;n++) {
     if (!g.draw.length) {
