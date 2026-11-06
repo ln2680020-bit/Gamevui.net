@@ -3,8 +3,19 @@
   const params = new URLSearchParams(location.search);
   const room = params.get('room');
   if (!room || !/^[a-zA-Z0-9_-]{1,20}$/.test(room)) return;
-  let saved;
-  try { saved = JSON.parse(localStorage.getItem('samuno:' + room) || '{}'); } catch { saved = {}; }
+  // Các trò Sâm/UNO/Caro/Cờ vua/Cờ tỷ phú dùng samuno:<room>;
+  // các trò giải đố dùng gamevui-room:<room>. Hỗ trợ cả hai để link mời
+  // hoạt động thống nhất trên mọi trò chơi online.
+  let saved = {};
+  for (const key of ['samuno:' + room, 'gamevui-room:' + room]) {
+    try {
+      const candidate = JSON.parse(localStorage.getItem(key) || '{}');
+      if (candidate && typeof candidate.token === 'string' && candidate.token) {
+        saved = candidate;
+        break;
+      }
+    } catch {}
+  }
   if (!saved.token) return;
 
   const style = document.createElement('style');
