@@ -49,9 +49,10 @@ test('server và các script lời mời có cú pháp JavaScript hợp lệ', (
   const page = fs.readFileSync(require.resolve('../invite.html'), 'utf8');
   new vm.Script(server, { filename: 'server.js' });
   new vm.Script(client, { filename: 'invite-client.js' });
-  const inline = [...page.matchAll(/<script>([\\s\\S]*?)<\\/script>/g)];
-  assert.equal(inline.length, 1);
-  new vm.Script(inline[0][1], { filename: 'invite.html' });
+  const scriptStart = page.indexOf('<script>');
+  const scriptEnd = page.indexOf('</script>', scriptStart + 8);
+  assert.ok(scriptStart >= 0 && scriptEnd > scriptStart);
+  new vm.Script(page.slice(scriptStart + 8, scriptEnd), { filename: 'invite.html' });
 });
 
 test('mọi trò chơi có chế độ online đều được gắn công cụ mời dùng chung', () => {
