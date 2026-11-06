@@ -45,7 +45,6 @@ function message(code){return ({invite_invalid:'Đường link mời không hợ
 async function joinRoom(asGuest){
  if(busy||!invite)return;busy=true;$('login').disabled=true;$('guest').disabled=true;$('join-account').disabled=true;$('status').textContent='Đang đưa bạn vào phòng…';
  try{
-  if(asGuest&&sessionUser)await api('/api/auth/logout',{method:'POST',body:'{}'});
   const saved=(()=>{try{return JSON.parse(localStorage.getItem('samuno:'+invite.room)||'{}')}catch{return {}}})();
   const joined=await api('/api/join',{method:'POST',body:JSON.stringify({room:invite.room,game:invite.gameType,inviteToken,token:saved.token||'',name:sessionUser?.nickname||'Người chơi',profileToken:profileToken(asGuest),asGuest})});
   localStorage.setItem('samuno:'+invite.room,JSON.stringify({token:joined.token}));
