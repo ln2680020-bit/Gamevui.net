@@ -63,7 +63,7 @@ function publicState(r, token) {
     pendingDraw:g.pendingDraw?{seat:g.pendingDraw.seat,amount:g.pendingDraw.amount,type:g.pendingDraw.type}:null
   } };
 }
-function send(r) { for (const entry of r.events) { const p = playerFor(r, entry.token); if (!p || !entry.res.writable || entry.res.destroyed) continue; try { entry.res.write(`data: ${JSON.stringify(publicState(r, entry.token))}\\n\\n`); } catch {} } }
+function send(r) { for (const entry of r.events) { const p = playerFor(r, entry.token); if (!p || !entry.res.writable || entry.res.destroyed) continue; try { entry.res.write(`data: ${JSON.stringify(publicState(r, entry.token))}\n\n`); } catch {} } }
 function pushRoomNotification(r, type, message) { if (!r) return; r.notifications = r.notifications || []; r.notifications.push({ id:id(), type, message:String(message||'').slice(0,180), at:Date.now() }); if (r.notifications.length > 30) r.notifications.splice(0, r.notifications.length - 30); }
 function readGamePage(file) { return fs.readFileSync(file, 'utf8').replace(/<\/body>/i, '<script src="/invite-client.js" defer></script></body>'); }
 function nextTurn(g, steps = 1) { const n = g.seats.length; g.turn = (g.turn + g.direction * steps % n + n) % n; }
