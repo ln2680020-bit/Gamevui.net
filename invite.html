@@ -39,7 +39,7 @@ const gameInfo={
  monopoly:['🏙️','Cờ tỷ phú'],sudoku:['🔢','Sudoku'],word:['🔤','Đoán từ'],sequence:['💡','Bấm ô theo thứ tự']
 };
 let invite=null,sessionUser=null,busy=false;
-function profileToken(){let value=localStorage.getItem('samuno:profile-token');if(!value){const b=new Uint8Array(32);crypto.getRandomValues(b);value=Array.from(b,x=>x.toString(16).padStart(2,'0')).join('');localStorage.setItem('samuno:profile-token',value);}return value;}
+function profileToken(asGuest=false){const key=asGuest?'samuno:invite-guest-profile-token':'samuno:profile-token';let value=localStorage.getItem(key);if(!value){const b=new Uint8Array(32);crypto.getRandomValues(b);value=Array.from(b,x=>x.toString(16).padStart(2,'0')).join('');localStorage.setItem(key,value);}return value;}
 async function api(url,options={}){const response=await fetch(url,{...options,headers:{'content-type':'application/json',...(options.headers||{})}});const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||'request_failed');return data;}
 function message(code){return ({invite_invalid:'Đường link mời không hợp lệ hoặc đã hết hạn.',room_not_found:'Phòng này không còn tồn tại.',room_full:'Phòng đã đủ người.',game_in_progress:'Trò chơi này đã bắt đầu và không nhận thêm người.',invalid_credentials:'Email hoặc mật khẩu chưa đúng.',too_many_attempts:'Bạn đã thử quá nhiều lần. Hãy đợi 15 phút.',persistence_unavailable:'Đăng nhập hiện không khả dụng. Bạn vẫn có thể tiếp tục với tư cách khách.',wrong_game:'Lời mời không khớp với trò chơi.',reconnect_expired:'Thời gian kết nối lại đã hết.'})[code]||code;}
 async function joinRoom(asGuest){
@@ -47,7 +47,7 @@ async function joinRoom(asGuest){
  try{
   if(asGuest&&sessionUser)await api('/api/auth/logout',{method:'POST',body:'{}'});
   const saved=(()=>{try{return JSON.parse(localStorage.getItem('samuno:'+invite.room)||'{}')}catch{return {}}})();
-  const joined=await api('/api/join',{method:'POST',body:JSON.stringify({room:invite.room,game:invite.gameType,inviteToken,token:saved.token||'',name:sessionUser?.nickname||'Người chơi',profileToken:profileToken()})});
+  const joined=await api('/api/join',{method:'POST',body:JSON.stringify({room:invite.room,game:invite.gameType,inviteToken,token:saved.token||'',name:sessionUser?.nickname||'Người chơi',profileToken:profileToken(asGuest),asGuest})});
   localStorage.setItem('samuno:'+invite.room,JSON.stringify({token:joined.token}));
   const game=invite.gameType,room=encodeURIComponent(invite.room);
   const target=game==='caro'?'/games/caro?online=1&room='+room+'&mode='+encodeURIComponent(invite.caroMode||'normal'):
@@ -66,7 +66,7 @@ async function init(){
   $('game-icon').textContent=icon;$('game-name').textContent=name;$('title').textContent='Bạn được mời chơi '+name+'!';
   $('description').textContent='Chọn đăng nhập hoặc tiếp tục với tư cách khách. Sau đó bạn sẽ tự động vào đúng phòng.';
   $('room-count').textContent=invite.playerCount+'/'+invite.maxPlayers+' người đang ở trong phòng';
-  const auth=await api('/api/auth/me',{method:'GET',headers:{}});
+  let auth={user:null};try{auth=await api('/api/auth/me',{method:'GET',headers:{}});}catch{}
   sessionUser=auth.user||null;
   $('signed-status').textContent=sessionUser?'Đã đăng nhập: '+(sessionUser.nickname||sessionUser.email):'Bạn chưa đăng nhập tài khoản.';
   $('join-account').classList.toggle('hidden',!sessionUser);
