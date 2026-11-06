@@ -1,6 +1,32 @@
 <!doctype html>
 <html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#101827"><title>Cờ tỷ phú · Gamevui.net</title><style>
 :root{color-scheme:dark;--bg:#101827;--panel:#1b293b;--line:#ffffff1c;--text:#f4f7fb;--muted:#aab6c8;--accent:#f3b64b;--cyan:#64d8ee}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% -10%,#354968,transparent 55%),var(--bg);color:var(--text);font:16px/1.5 system-ui,sans-serif;padding:14px;display:flex;justify-content:center}main{width:min(100%,820px)}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px}.back,button,input{border:1px solid var(--line);border-radius:12px;background:#26364b;color:var(--text);padding:10px 14px;font:inherit;font-weight:700}.back{color:inherit;text-decoration:none}.primary{background:var(--accent);color:#241b0b;border:0}.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 10px 30px #0002}h1{font-size:clamp(30px,7vw,44px);margin:0;color:var(--accent)}.sub,.muted{color:var(--muted);font-size:13px}.sub{margin:4px 0 16px}.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.status{color:#ffe09a;font-weight:750;min-height:24px}.board{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}.space{min-height:82px;padding:7px 3px;border:1px solid var(--line);border-radius:12px;background:#26364b;text-align:center;font-size:12px;display:flex;flex-direction:column;justify-content:center;gap:3px}.space.here{outline:2px solid var(--accent);background:#3a506c}.space strong{font-size:12px}.players{display:flex;gap:7px;flex-wrap:wrap}.player{padding:8px 10px;border:1px solid var(--line);border-radius:11px;background:#26364b;font-size:12px}.player.active{outline:2px solid var(--accent)}.hidden{display:none!important}input{min-width:0;width:100%}@media(max-width:430px){.space{min-height:70px;font-size:10px}.space strong{font-size:10px}button{padding:9px 11px}}
+
+/* Responsive touch layout shared by standalone games */
+@media(max-width:760px){
+ body{padding: max(8px,env(safe-area-inset-top)) 9px calc(10px + env(safe-area-inset-bottom));font-size:14px;overscroll-behavior-y:contain}
+ main{width:100%;max-width:100%;min-width:0}
+ .top{gap:7px;margin-bottom:10px;flex-wrap:wrap}
+ .top h1,h1{font-size:clamp(20px,5vw,27px)}
+ .panel{padding:10px;margin-bottom:9px;border-radius:13px}
+ button,.back,input,select{min-height:40px;touch-action:manipulation}
+ .row,.controls{gap:6px}
+ .sub,.muted,.hint{font-size:12px}
+ .scoreboard,.scores{gap:5px}
+}
+@media(max-width:760px) and (orientation:landscape){
+ body{min-height:100dvh;padding:4px 10px calc(5px + env(safe-area-inset-bottom))}
+ main{max-width:1100px}
+ .top{margin-bottom:5px}
+ .sub{margin:2px 0 6px}
+ .panel{padding:7px;margin-bottom:6px}
+ #board{margin:6px auto;max-height:calc(100dvh - 120px)}
+ .board{max-height:calc(100dvh - 120px)}
+ .controls{margin:5px 0}
+ .hint{margin:4px 0}
+}
+@media(hover:none){button,a,.tile,.cell,.square{-webkit-tap-highlight-color:transparent;touch-action:manipulation}}
+
 </style></head><body><main><header class="top"><a class="back" href="/">← Game Hub</a><span class="muted">GAMEVUI.NET</span></header><h1>🏙️ Cờ tỷ phú</h1><p class="sub">Gieo xúc xắc, mua bất động sản và quản lý tài sản để trở thành người chiến thắng.</p>
 <section class="panel" id="mode-panel"><h2>Chọn chế độ chơi</h2><p class="muted">Bạn có thể chơi tại chỗ hoặc tạo phòng trực tuyến cho 2–4 người.</p><div class="row"><button class="primary" id="local-mode">👥 Chơi cùng thiết bị</button><button id="online-mode">🌐 Chơi trực tuyến</button></div><div id="online-options" class="hidden" style="margin-top:12px"><button class="primary" id="create-room">＋ Tạo phòng công khai</button><div class="row" style="margin-top:9px"><input id="room-code" maxlength="20" placeholder="Nhập mã phòng"><button id="join-room">Tham gia</button></div><p id="online-status" class="status" aria-live="polite"></p></div></section>
 <section class="panel hidden" id="setup"><div class="row"><label for="players">Người chơi</label><select id="players"><option value="2">2 người</option><option value="3">3 người</option><option value="4">4 người</option></select><button id="new" class="primary">Ván mới</button></div></section>
