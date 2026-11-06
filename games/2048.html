@@ -12,6 +12,32 @@ main{width:min(100%,560px)}a{color:inherit;text-decoration:none}.top{display:fle
 @media(max-width:520px){body{padding:14px 12px 28px}.top{margin-bottom:16px}.toolbar{align-items:flex-start;flex-direction:column}.scores{width:100%}.scorebox{flex:1}.board-wrap{padding:8px;border-radius:15px}.board{gap:7px}.cell{border-radius:8px}.mobile-controls{display:grid}}
 @keyframes tile-spawn{0%{transform:scale(.25);opacity:.25}75%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}@keyframes tile-merge{0%{transform:scale(.72)}65%{transform:scale(1.16)}100%{transform:scale(1)}}@keyframes board-nudge{0%{transform:scale(.995)}100%{transform:scale(1)}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* Responsive touch layout shared by standalone games */
+@media(max-width:760px){
+ body{padding: max(8px,env(safe-area-inset-top)) 9px calc(10px + env(safe-area-inset-bottom));font-size:14px;overscroll-behavior-y:contain}
+ main{width:100%;max-width:100%;min-width:0}
+ .top{gap:7px;margin-bottom:10px;flex-wrap:wrap}
+ .top h1,h1{font-size:clamp(20px,5vw,27px)}
+ .panel{padding:10px;margin-bottom:9px;border-radius:13px}
+ button,.back,input,select{min-height:40px;touch-action:manipulation}
+ .row,.controls{gap:6px}
+ .sub,.muted,.hint{font-size:12px}
+ .scoreboard,.scores{gap:5px}
+}
+@media(max-width:760px) and (orientation:landscape){
+ body{min-height:100dvh;padding:4px 10px calc(5px + env(safe-area-inset-bottom))}
+ main{max-width:1100px}
+ .top{margin-bottom:5px}
+ .sub{margin:2px 0 6px}
+ .panel{padding:7px;margin-bottom:6px}
+ #board{margin:6px auto;max-height:calc(100dvh - 120px)}
+ .board{max-height:calc(100dvh - 120px)}
+ .controls{margin:5px 0}
+ .hint{margin:4px 0}
+}
+@media(hover:none){button,a,.tile,.cell,.square{-webkit-tap-highlight-color:transparent;touch-action:manipulation}}
+
 </style>
 </head>
 <body>
