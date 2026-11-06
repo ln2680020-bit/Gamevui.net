@@ -3,7 +3,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
-const { LIMITS, samCombo, beats, canFinishSam, findSamMove, endGame, publicState, rooms, act, voiceIceServers } = require('../server');
+const { LIMITS, samCombo, beats, canFinishSam, findSamMove, endGame, publicState, rooms, act } = require('../server');
 test('Sâm nhận diện bộ cùng hạng',()=>assert.deepEqual(samCombo([12,13,14]),{kind:'set',size:3,high:3}));
 test('Sâm nhận diện sảnh liên tiếp',()=>assert.deepEqual(samCombo([12,16,20]),{kind:'run',size:3,high:5}));
 test('Sâm từ chối tổ hợp không hợp lệ',()=>assert.equal(samCombo([12,20,28]),null));
@@ -44,14 +44,16 @@ test('Bot Sâm ưu tiên đánh tổ hợp dài khi mở vòng',()=>{const move=
 
 test('thời gian giữ chỗ khi mất kết nối là 120 giây',()=>assert.equal(LIMITS.grace,120000));
 
-test('Voice Chat chỉ trả STUN công khai khi chưa cấu hình TURN',()=>{const servers=voiceIceServers('ROOM1',{id:'player1'},1700000000000,{});assert.deepEqual(servers,[{urls:['stun:stun.l.google.com:19302']}]);});
-test('TURN dùng thông tin xác thực tạm thời ký bằng secret máy chủ',()=>{const servers=voiceIceServers('ROOM1',{id:'player1'},1700000000000,{TURN_URLS:'turn:relay.example:3478?transport=udp,turns:relay.example:5349',TURN_SECRET:'test-secret'});assert.equal(servers.length,2);assert.deepEqual(servers[1].urls,['turn:relay.example:3478?transport=udp','turns:relay.example:5349']);assert.match(servers[1].username,/^1700003600:ROOM1:player1$/);assert.ok(servers[1].credential.length>10);});
 
 test('Game Hub preserves the selected game type in room state',()=>{const a={id:'a',token:'ta',name:'A'};const r={code:'uno-room',gameType:'uno',hostId:'a',isPrivate:true,players:new Map([['a',a]]),game:null};const state=publicState(r,'ta');assert.equal(state.gameType,'uno');assert.equal(state.isHost,true);});
 
 
 test('danh sách phòng công khai chỉ hiển thị phòng chờ đúng trò chơi và chưa đầy',()=>{const {publicRooms,rooms,LIMITS}=require('../server');const code='public-list-test';const room={code,gameType:'sam',isPrivate:false,game:null,createdAt:10,hostId:'a',players:new Map([['a',{id:'a',name:'Host',avatar:'🦊',connected:true,bot:false}]])};rooms.set(code,room);try{const list=publicRooms('sam');assert.equal(list.length,1);assert.deepEqual(list[0],{room:code,gameType:'sam',hostName:'Host',hostAvatar:'🦊',playerCount:1,maxPlayers:LIMITS.maxPlayers,status:'waiting',createdAt:10});assert.equal(publicRooms('uno').length,0);room.isPrivate=true;assert.equal(publicRooms('sam').length,0);room.isPrivate=false;room.game={winner:-1};assert.equal(publicRooms('sam').length,0);}finally{rooms.delete(code);}});
 
+
+test('Game Hub Sâm/UNO có màn hình thiết lập Bot trước khi bắt đầu',()=>{const html=fs.readFileSync(require.resolve('../hub.html'),'utf8');assert.match(html,/id="samuno-bot-setup"/);assert.match(html,/data-action="add-samuno-bot"/);assert.match(html,/data-action="begin-samuno-bot"/);assert.match(html,/data-action="choose-samuno-bot"/);});
+test('Sâm/UNO không tải hoặc gọi Voice Chat trong trận',()=>{const html=fs.readFileSync(require.resolve('../index.html'),'utf8');assert.doesNotMatch(html,/voice-client\.js|GamevuiVoice/);const server=fs.readFileSync(require.resolve('../server.js'),'utf8');assert.doesNotMatch(server,/\/api\/voice|\/voice-client\.js/);});
+test('Server hiển thị Bot trong thông tin phòng và giới hạn số Bot theo trò chơi',()=>{const server=fs.readFileSync(require.resolve('../server.js'),'utf8');assert.match(server,/players:\[\.\.\.r\.players\.values\(\)\]\.map\(p=>\(\{id:p\.id,name:p\.name,bot:!!p\.bot,connected:!!p\.connected\}\)\)/);assert.match(server,/const capacity=r\.gameType==='sam'\?5:6/);});
 
 test('Game Hub inline JavaScript parses before serving interactive controls',()=>{
   const html=fs.readFileSync(require.resolve('../hub.html'),'utf8');
