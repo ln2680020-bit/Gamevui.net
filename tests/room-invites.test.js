@@ -70,3 +70,13 @@ test('server cung cấp API tạo và xác minh lời mời cùng thông báo ph
   assert.ok(server.includes("pushRoomNotification(r,'player_joined'"));
   assert.ok(server.includes("notifications:r.notifications||[]"));
 });
+
+test('lời mời được xác minh lại khi tham gia và khách không cần đăng xuất tài khoản', () => {
+  const server = fs.readFileSync(require.resolve('../server'), 'utf8');
+  const page = fs.readFileSync(require.resolve('../invite.html'), 'utf8');
+  assert.ok(server.includes("if(d.inviteToken){const invite=getInvite(roomInvites,d.inviteToken)"));
+  assert.ok(server.includes("const account=d.asGuest?null:await getSessionUser"));
+  assert.ok(server.includes("r.game&&r.game.winner<0&&!r.game.draw"));
+  assert.ok(page.includes("profileToken:profileToken(asGuest),asGuest"));
+  assert.ok(!page.includes("/api/auth/logout"));
+});
