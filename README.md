@@ -1,4 +1,4 @@
-# Gamevui.net — Game Hub, Sâm & UNO
+# GameVerse — One Universe. Endless Games.
 
 ## Chạy ứng dụng
 
