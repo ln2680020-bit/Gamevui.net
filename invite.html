@@ -47,7 +47,7 @@ async function joinRoom(asGuest){
  try{
   if(asGuest&&sessionUser)await api('/api/auth/logout',{method:'POST',body:'{}'});
   const saved=(()=>{try{return JSON.parse(localStorage.getItem('samuno:'+invite.room)||'{}')}catch{return {}}})();
-  const joined=await api('/api/join',{method:'POST',body:JSON.stringify({room:invite.room,game:invite.gameType,token:saved.token||'',name:sessionUser?.nickname||'Người chơi',profileToken:profileToken()})});
+  const joined=await api('/api/join',{method:'POST',body:JSON.stringify({room:invite.room,game:invite.gameType,inviteToken,token:saved.token||'',name:sessionUser?.nickname||'Người chơi',profileToken:profileToken()})});
   localStorage.setItem('samuno:'+invite.room,JSON.stringify({token:joined.token}));
   const game=invite.gameType,room=encodeURIComponent(invite.room);
   const target=game==='caro'?'/games/caro?online=1&room='+room+'&mode='+encodeURIComponent(invite.caroMode||'normal'):
