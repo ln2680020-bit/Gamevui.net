@@ -102,6 +102,36 @@ input{background:#101b2b;color:var(--text);border-color:#ffffff2a}
 .game-screen .seat{background:#26364b;border-color:#ffffff20}.game-screen .seat.current-turn{background:#58451e;border-color:#f3b64b}
 .game-screen .chat-box{border-radius:14px}.game-screen .chat-line{background:#26364b}
 @media(max-width:760px){.game-screen .felt{background:radial-gradient(ellipse,#34536a,#1a3045);min-height:92px}}
+
+/* Final mobile refinement: compact table controls and a true landscape arrangement */
+@media(max-width:760px){
+ html,body{min-height:100%;overscroll-behavior-y:contain}
+ main{width:100%;max-width:none;padding:7px 8px calc(14px + env(safe-area-inset-bottom))}
+ .game-screen .game-extras{display:none}
+ .game-screen .chat-box{padding:7px;margin-top:6px}
+ .game-screen .chat-list{max-height:86px;overflow:auto}
+ .game-screen .chat-controls{gap:5px}
+ .game-screen .chat-line{font-size:11px;padding:5px 7px}
+ .game-screen .emote-row{gap:4px}
+ .game-screen .emote-pill{padding:4px 7px;font-size:17px}
+ .game-screen button{min-height:39px;padding:7px 10px;font-size:12px}
+ .game-screen input{font-size:16px;min-width:0}
+}
+@media(max-width:760px) and (orientation:landscape){
+ body{min-height:100dvh}
+ main{max-width:none;padding:4px 8px}
+ .game-screen{display:grid;grid-template-columns:minmax(0,1fr) minmax(185px,27vw);grid-template-rows:auto auto minmax(0,1fr) auto;gap:5px;align-items:start}
+ .game-screen .game-topbar,.game-screen .turn-overview,.game-screen .felt,.game-screen .hand-zone{grid-column:1}
+ .game-screen .game-topbar{grid-row:1;padding:5px 8px}
+ .game-screen .turn-overview{grid-row:2;padding:5px 7px}
+ .game-screen .felt{grid-row:3;min-height:0;padding:5px}
+ .game-screen .hand-zone{grid-row:4;padding:5px}
+ .game-screen .chat-box{grid-column:2;grid-row:1 / span 4;margin:0;max-height:calc(100dvh - 10px);overflow:auto}
+ .game-screen .chat-list{max-height:28dvh}
+ .game-screen .card{width:clamp(34px,6vw,56px);height:clamp(48px,9vw,76px)}
+ .game-screen .seat{padding:3px 6px}
+}
+
 </style></head><body><main><h1>🃏 Sâm & UNO · Gamevui.net</h1><div id="app"><div class="panel">Đang tải…</div></div></main>
 <script>
 window.__samunoBootTimer=setTimeout(()=>{const app=document.getElementById('app');if(app&&/Đang tải|Đang kết nối phòng/.test(app.textContent)){app.innerHTML='<div class="panel"><b>Không thể khởi động giao diện.</b><p>Trang có thể gặp lỗi JavaScript hoặc phiên bản cũ trong bộ nhớ trình duyệt.</p><button onclick="location.reload()">Tải lại trò chơi</button></div>';}},7000);
