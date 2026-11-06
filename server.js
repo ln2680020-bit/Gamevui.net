@@ -78,7 +78,7 @@ function publicState(r, token) {
 }
 function send(r) { for (const entry of r.events) { const p = playerFor(r, entry.token); if (!p || !entry.res.writable || entry.res.destroyed) continue; try { entry.res.write(`data: ${JSON.stringify(publicState(r, entry.token))}\\n\\n`); } catch {} } }
 function pushRoomNotification(r, type, message) { if (!r) return; r.notifications = r.notifications || []; r.notifications.push({ id:id(), type, message:String(message||'').slice(0,180), at:Date.now() }); if (r.notifications.length > 30) r.notifications.splice(0, r.notifications.length - 30); }
-function readGamePage(file) { return fs.readFileSync(file, 'utf8').replace(/<\\/body>/i, '<script src="/invite-client.js" defer></script></body>'); }
+function readGamePage(file) { return fs.readFileSync(file, 'utf8').replace(/<\/body>/i, '<script src="/invite-client.js" defer></script></body>'); }
 function nextTurn(g, steps = 1) { const n = g.seats.length; g.turn = (g.turn + g.direction * steps % n + n) % n; }
 function delayTurn(r,g,seat){g.pendingTurn=seat;g.turnLockUntil=Date.now()+3000;g.turnDeadline=g.turnLockUntil+30000;if(r.effectTimer)clearTimeout(r.effectTimer);r.effectTimer=setTimeout(()=>{if(r.game!==g||g.winner>=0)return;g.turn=g.pendingTurn;delete g.pendingTurn;g.turnLockUntil=0;g.turnDeadline=Date.now()+30000;send(r);scheduleBot(r);},3000);if(r.effectTimer&&typeof r.effectTimer.unref==='function')r.effectTimer.unref();}
 function delayNextTurn(r,g,steps=1){const n=g.seats.length;delayTurn(r,g,(g.turn+g.direction*steps%n+n)%n);}
