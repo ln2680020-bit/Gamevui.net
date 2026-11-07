@@ -77,7 +77,7 @@ test('all local game pages reference available same-origin script assets', () =>
     const scripts = [...html.matchAll(/<script\b[^>]*\bsrc=["']([^"']+)["']/gi)].map(match => match[1]);
     for (const src of scripts) {
       assert.ok(src.startsWith('/'), game + ' has a non-root script URL: ' + src);
-      assert.ok(fs.existsSync(path.join(root, src.replace(/^\//, ''))), game + ' references missing script: ' + src);
+      assert.ok(fs.existsSync(path.join(root, src.replace(/^\\//, ''))), game + ' references missing script: ' + src);
       assert.ok(worker.includes("'" + src + "'"), 'Offline shell does not precache ' + src);
     }
   }
