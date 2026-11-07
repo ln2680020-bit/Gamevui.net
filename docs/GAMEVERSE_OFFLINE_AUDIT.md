@@ -57,3 +57,19 @@ The Game Hub catalog contains nine games. Seven have standalone game pages serve
 Sâm and UNO are different: they run inside `/play` and their current client uses the server room API and EventSource for game state. Caching `/play` only preserves its HTML shell; it does not make Sâm or UNO playable offline. Dedicated local game state, turn handling, and bot logic are still required for those two games. Do not report the entire nine-game offline goal as complete until those local modes are implemented and tested.
 
 The current Service Worker caches the seven standalone game routes, the `/play` shell, the shared `/invite-client.js`, and the local game engines. It deliberately bypasses API, health, event-stream, and socket endpoints. Offline navigation can display previously cached pages, but page availability and functional offline gameplay are separate acceptance criteria.
+
+
+## Sâm and UNO local bot implementation (2026-11-07)
+
+A separate browser-only mode has now been added:
+
+- Entry point: `/games/cards-offline?game=sam` or `/games/cards-offline?game=uno`.
+- Engine: `games/cards-offline-engine.js`; it owns the local deck, hands, turn order, Sâm combinations, UNO color/action handling, drawing, penalties, and bot decisions.
+- The Game Hub's Sâm/UNO mode picker now offers **Chơi Offline với Bot** separately from the existing online-room setup.
+- The new page does not call `fetch`, `/api/`, EventSource, or WebSocket. Local match state stays in browser memory.
+- The page and engine are included in the Service Worker precache. Cache name is now `gameverse-offline-v4`.
+- The online `/play` client and existing room API have not been changed for this feature.
+
+The local mode currently supports Sâm with 1–4 bots and UNO with 1–5 bots. UNO supports single cards, identical pairs, wild-color choice, draw cards, and cumulative +2/+4 penalties. The offline mode is intentionally separate from server-backed accounts, public profiles, online rooms, chat, emotes, and global rankings.
+
+Automated Node tests have been added in `tests/cards-offline.test.js` for local engine setup, Sâm combinations/bot moves, UNO local winning moves, drawn-card restrictions, identical pairs, cumulative penalties, and route/cache wiring. These checks are not a substitute for a real browser test with DevTools network disabled. Do not mark the Sâm/UNO offline experience fully accepted until the latest GitHub Actions run passes and both games have been manually exercised in a browser after the Service Worker has installed.
