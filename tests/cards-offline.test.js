@@ -83,7 +83,7 @@ test('UNO enforces playing the card just drawn and lets a bot play locally', () 
   stackGame.top = 'RD';
   stackGame.color = 'R';
   stackGame.pendingDraw = { seat: 0, amount: 2 };
-  stackGame.hands[0] = ['WF'];
+  stackGame.hands[0] = ['WF', 'B2'];
   assert.equal(engine.unoPlay(stackGame, 0, 'WF', 'B'), true);
   assert.equal(stackGame.pendingDraw.amount, 6);
 
