@@ -59,6 +59,7 @@ test('UNO engine deals seven cards and supports local winning moves', () => {
 
 test('UNO enforces playing the card just drawn and lets a bot play locally', () => {
   const game = engine.createGame('uno', 1);
+  game.turn = 0;
   game.top = 'R3';
   game.color = 'R';
   game.hands[0] = ['R5', 'B2'];
@@ -66,6 +67,15 @@ test('UNO enforces playing the card just drawn and lets a bot play locally', () 
   game.drawnCard = 'R5';
   assert.equal(engine.unoPlay(game, 0, 'B2'), false);
   assert.equal(engine.unoPlay(game, 0, 'R5'), true);
+
+  const stackGame = engine.createGame('uno', 2);
+  stackGame.turn = 0;
+  stackGame.top = 'RD';
+  stackGame.color = 'R';
+  stackGame.pendingDraw = { seat: 0, amount: 2 };
+  stackGame.hands[0] = ['WF'];
+  assert.equal(engine.unoPlay(stackGame, 0, 'WF', 'B'), true);
+  assert.equal(stackGame.pendingDraw.amount, 6);
 
   const botGame = engine.createGame('uno', 1);
   botGame.turn = 1;
