@@ -1,1 +1,13 @@
-{"name":"sam-uno","version":"1.0.0","scripts":{"start":"node server.js"}}
+{
+  "name": "sam-uno",
+  "version": "2.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --check voice-client.js && node --test"
+  },
+  "dependencies": {
+    "pg": "^8.16.3",
+    "ws": "^8.18.3"
+  }
+}

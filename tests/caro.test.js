@@ -1,0 +1,19 @@
+'use strict';
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const E=require('../games/caro-engine');
+test('Caro chỉ cho đặt quân vào ô trống trong bàn 15x15',()=>{const b=E.empty();assert.equal(b.length,15);const first=E.play(b,0,0,1);assert.equal(first.ok,true);assert.equal(E.play(first.board,0,0,2).ok,false);assert.equal(E.play(b,-1,0,1).ok,false);});
+test('Caro phát hiện năm quân liên tiếp theo hàng, cột và đường chéo',()=>{let b=E.empty();for(let c=3;c<8;c++)b[7][c]=1;assert.equal(E.winnerFrom(b,7,5),1);b=E.empty();for(let r=2;r<7;r++)b[r][4]=2;assert.equal(E.winnerFrom(b,4,4),2);b=E.empty();for(let k=0;k<5;k++)b[3+k][2+k]=1;assert.equal(E.winnerFrom(b,5,4),1);});
+test('Caro tạo bàn cờ mới, không sửa bàn cũ',()=>{const b=E.empty(),r=E.play(b,7,7,1);assert.equal(b[7][7],0);assert.equal(r.board[7][7],1);});
+test('Chế độ vô hạn không cho dùng lại quân đã nằm trong đường 5 được gạch',()=>{const b=E.empty();for(let c=0;c<6;c++)b[2][c]=1;const lines=E.fiveLines(b,1);assert.equal(lines.length,1);assert.equal(new Set(lines.flat().map(p=>p.r+','+p.c)).size,5);});
+test('Chế độ vô hạn chỉ có thêm điểm khi có đủ 5 quân mới không trùng quân cũ',()=>{const b=E.empty();for(let c=0;c<10;c++)b[4][c]=1;const lines=E.fiveLines(b,1);assert.equal(lines.length,2);assert.equal(new Set(lines.flat().map(p=>p.r+','+p.c)).size,10);});
+test('Các đường ghi điểm giao nhau không được dùng lại quân đã gạch',()=>{const b=E.empty();for(let c=3;c<8;c++)b[7][c]=1;for(let r=3;r<8;r++)b[r][5]=1;const lines=E.fiveLines(b,1);assert.equal(lines.length,1);assert.equal(new Set(lines.flat().map(p=>p.r+','+p.c)).size,5);});
+test('Chế độ vô hạn nhận diện đường chéo và không đếm quân của đối thủ',()=>{const b=E.empty();for(let k=0;k<5;k++)b[k][k]=2;assert.equal(E.fiveLines(b,2).length,1);assert.equal(E.fiveLines(b,1).length,0);});
+test('Các đoạn năm quân liên tiếp tách biệt được tính riêng',()=>{const b=E.empty();for(let c=0;c<5;c++)b[0][c]=1;for(let c=7;c<12;c++)b[0][c]=1;assert.equal(E.fiveLines(b,1).length,2);});
+
+const {startCaroGame,caroMove,publicState}=require('../server');
+function makeRoom(mode='normal'){const a={id:'p1',token:'t1',name:'X',connected:true,bot:false},b={id:'p2',token:'t2',name:'O',connected:true,bot:false};return {code:'CARO1',gameType:'caro',caroMode:mode,hostId:'p1',players:new Map([[a.id,a],[b.id,b]]),events:new Set(),chat:[],emotes:[],isPrivate:true};}
+test('Online Caro starts only with two connected players and publishes player turn',()=>{const r=makeRoom();assert.equal(startCaroGame(r),true);const state=publicState(r,'t1');assert.equal(state.game.type,'caro');assert.equal(state.game.mySeat,0);assert.equal(state.game.myTurn,true);assert.equal(state.game.board.length,15);});
+test('Online Caro rejects out-of-turn and occupied-cell moves',()=>{const r=makeRoom();startCaroGame(r);assert.equal(caroMove(r.game,1,7,7).error,'not_your_turn');assert.equal(caroMove(r.game,0,7,7).ok,true);assert.equal(caroMove(r.game,1,7,7).error,'invalid_move');});
+test('Online Caro normal mode ends immediately after five in a row',()=>{const r=makeRoom();startCaroGame(r);for(let c=0;c<5;c++){assert.equal(caroMove(r.game,0,0,c).ok,true);if(c<4)assert.equal(caroMove(r.game,1,1,c).ok,true);}assert.equal(r.game.winner,0);assert.equal(r.game.draw,false);});
+test('Online Caro infinite mode continues after five and scores only when board is full',()=>{const r=makeRoom('infinite');startCaroGame(r);for(let c=0;c<5;c++){assert.equal(caroMove(r.game,0,0,c).ok,true);if(c<4)assert.equal(caroMove(r.game,1,1,c).ok,true);}assert.equal(r.game.winner,-1);assert.equal(r.game.draw,false);r.game.board=Array.from({length:15},()=>Array(15).fill(1));r.game.board[14][14]=0;r.game.turn=1;assert.equal(caroMove(r.game,1,14,14).ok,true);assert.equal(r.game.draw,false);assert.equal(r.game.winner,0);assert.ok(r.game.scoreX>r.game.scoreO);});

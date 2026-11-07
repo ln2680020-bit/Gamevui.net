@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2216%22 fill=%22%230b102b%22/%3E%3Cpath d=%22M49 17A22 22 0 1 0 50 43H36a10 10 0 1 1 0-20h13%22 fill=%22none%22 stroke=%22%237654ff%22 stroke-width=%227%22 stroke-linecap=%22round%22/%3E%3Cpath d=%22M7 43Q28 7 58 20Q34 17 7 43Z%22 fill=%22none%22 stroke=%22%235de3ff%22 stroke-width=%223%22/%3E%3C/svg%3E">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101827">
+<title>2048 · GameVerse</title>
+<style>
+:root{color-scheme:dark;--bg:#101827;--panel:#1b293b;--board:#27364a;--text:#f6f7fb;--muted:#aab6c8;--accent:#f3b64b;--line:#ffffff18}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% -10%,#354968 0,transparent 55%),var(--bg);color:var(--text);font:16px/1.5 system-ui,sans-serif;display:flex;justify-content:center;padding:20px 14px 40px}
+main{width:min(100%,560px)}a{color:inherit;text-decoration:none}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px}.back,.btn{border:1px solid var(--line);background:#26364b;color:var(--text);border-radius:12px;padding:10px 14px;font-weight:750;cursor:pointer}.back:hover,.btn:hover{filter:brightness(1.15)}h1{font-size:clamp(38px,10vw,58px);line-height:1;margin:0;color:var(--accent);letter-spacing:-3px}.subtitle{color:var(--muted);margin:8px 0 20px}.scores{display:flex;gap:10px}.scorebox{min-width:94px;text-align:center;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:8px 14px}.scorebox small{display:block;color:var(--muted);font-size:11px;font-weight:800;letter-spacing:1px}.scorebox strong{font-size:23px;font-variant-numeric:tabular-nums}.toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:14px 0}.hint{color:var(--muted);font-size:13px}.btn.primary{background:var(--accent);color:#241b0b;border:0}.board-wrap{position:relative;background:var(--board);padding:10px;border-radius:18px;border:1px solid #ffffff20;box-shadow:0 18px 50px #0005;touch-action:none;user-select:none}.board{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;aspect-ratio:1}.cell{display:flex;align-items:center;justify-content:center;min-width:0;border-radius:11px;background:#ffffff0b;position:relative}.tile{width:100%;height:100%;display:flex;align-items:center;justify-content:center;border-radius:11px;background:var(--tile,#f5f7fb);border:1px solid #00000018;color:var(--ink,#26303d);font-size:clamp(21px,7vw,37px);font-weight:850;letter-spacing:-1px;font-variant-numeric:tabular-nums;box-shadow:inset 0 -3px #00000012;will-change:transform;position:relative;z-index:1}.tile-ghost{position:fixed;z-index:50;pointer-events:none;display:flex;align-items:center;justify-content:center;border-radius:11px;font-weight:850;box-shadow:0 8px 18px #0004;will-change:transform,opacity}.tile.spawn{animation:tile-spawn .19s cubic-bezier(.2,.85,.3,1.35) both}.tile.merge{animation:tile-merge .24s cubic-bezier(.2,.9,.25,1.3) both}.board.moving{animation:board-nudge .16s ease-out}.tile[data-value="2"],.tile[data-value="4"],.tile[data-value="8"]{--tile:#f5f7fb;--ink:#344054}.tile[data-value="16"]{--tile:#fff2a6;--ink:#5b4300}.tile[data-value="32"]{--tile:#ffd45c;--ink:#513600}.tile[data-value="64"]{--tile:#ffb45c;--ink:#542600}.tile[data-value="128"]{--tile:#ff873f;--ink:#fff;font-size:clamp(18px,6vw,31px)}.tile[data-value="256"]{--tile:#ff7777;--ink:#fff;font-size:clamp(18px,6vw,31px)}.tile[data-value="512"]{--tile:#ed4545;--ink:#fff;font-size:clamp(18px,6vw,31px)}.tile[data-value="1024"]{--tile:#b58aff;--ink:#fff;font-size:clamp(15px,5vw,26px)}.tile[data-value="2048"]{--tile:#854de8;--ink:#fff;font-size:clamp(15px,5vw,26px)}.tile[data-value="4096"]{--tile:#3978ed;--ink:#fff;font-size:clamp(15px,5vw,26px)}.tile[data-value="8192"]{--tile:#22b8e6;--ink:#073047;font-size:clamp(15px,5vw,26px)}.tile[data-value="16384"]{--tile:#20c7ad;--ink:#063b35;font-size:clamp(14px,4.5vw,24px)}.tile[data-value="32768"]{--tile:#45bd70;--ink:#07351b;font-size:clamp(14px,4.5vw,24px)}.tile[data-value="high"]{--tile:#384eaa;--ink:#fff;font-size:clamp(14px,4.5vw,24px)}.overlay{position:absolute;z-index:20;inset:10px;border-radius:12px;background:rgba(10,18,32,.94);border:1px solid #ffffff30;box-shadow:0 12px 36px #0009;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;backdrop-filter:blur(5px)}.overlay.hidden{display:none}.overlay h2{font-size:30px;margin:0 0 6px}.overlay p{color:var(--muted);margin:0 0 18px}.instructions{margin-top:20px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;color:var(--muted);font-size:14px}.instructions strong{color:var(--text)}.mobile-controls{display:none;grid-template-columns:repeat(3,54px);gap:7px;justify-content:center;margin:16px auto 0}.mobile-controls button{height:48px;border:1px solid var(--line);border-radius:12px;background:#26364b;color:white;font-size:20px;font-weight:800}.mobile-controls button:first-child{grid-column:2}.mobile-controls button:nth-child(2){grid-column:1;grid-row:2}.mobile-controls button:nth-child(3){grid-column:2;grid-row:2}.mobile-controls button:nth-child(4){grid-column:3;grid-row:2}.footer{text-align:center;color:#718198;font-size:12px;margin-top:18px}
+@media(max-width:520px){body{padding:14px 12px 28px}.top{margin-bottom:16px}.toolbar{align-items:flex-start;flex-direction:column}.scores{width:100%}.scorebox{flex:1}.board-wrap{padding:8px;border-radius:15px}.board{gap:7px}.cell{border-radius:8px}.mobile-controls{display:grid}}
+@keyframes tile-spawn{0%{transform:scale(.25);opacity:.25}75%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}@keyframes tile-merge{0%{transform:scale(.72)}65%{transform:scale(1.16)}100%{transform:scale(1)}}@keyframes board-nudge{0%{transform:scale(.995)}100%{transform:scale(1)}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* Responsive touch layout shared by standalone games */
+@media(max-width:760px){
+ body{padding: max(8px,env(safe-area-inset-top)) 9px calc(10px + env(safe-area-inset-bottom));font-size:14px;overscroll-behavior-y:contain}
+ main{width:100%;max-width:100%;min-width:0}
+ .top{gap:7px;margin-bottom:10px;flex-wrap:wrap}
+ .top h1,h1{font-size:clamp(20px,5vw,27px)}
+ .panel{padding:10px;margin-bottom:9px;border-radius:13px}
+ button,.back,input,select{min-height:40px;touch-action:manipulation}
+ .row,.controls{gap:6px}
+ .sub,.muted,.hint{font-size:12px}
+ .scoreboard,.scores{gap:5px}
+}
+@media(max-width:760px) and (orientation:landscape){
+ body{min-height:100dvh;padding:4px 10px calc(5px + env(safe-area-inset-bottom))}
+ main{max-width:1100px}
+ .top{margin-bottom:5px}
+ .sub{margin:2px 0 6px}
+ .panel{padding:7px;margin-bottom:6px}
+ #board{margin:6px auto;max-height:calc(100dvh - 120px)}
+ .board{max-height:calc(100dvh - 120px)}
+ .controls{margin:5px 0}
+ .hint{margin:4px 0}
+}
+@media(hover:none){button,a,.tile,.cell,.square{-webkit-tap-highlight-color:transparent;touch-action:manipulation}}
+
+</style>
+</head>
+<body>
+<main>
+ <div class="top"><a class="back" href="/">← Sảnh trò chơi</a><div class="scores"><div class="scorebox"><small>ĐIỂM</small><strong id="score">0</strong></div><div class="scorebox"><small>KỶ LỤC</small><strong id="best">0</strong></div></div></div>
+ <h1>2048</h1><p class="subtitle">Ghép những ô số giống nhau để tạo ra ô 2048. Càng ghép lớn, điểm càng cao!</p>
+ <div class="toolbar"><span class="hint">Dùng phím mũi tên hoặc WASD để di chuyển</span><button class="btn primary" id="new-game">Chơi mới ↻</button></div>
+ <div class="board-wrap" id="board-wrap" aria-label="Bàn chơi 2048">
+  <div class="board" id="board" role="grid" aria-label="Bàn cờ 4 nhân 4"></div>
+  <div class="overlay hidden" id="overlay" aria-live="polite"><h2 id="overlay-title">Bạn đã thắng!</h2><p id="overlay-message">Bạn đã tạo được ô 2048.</p><button class="btn primary" id="continue-game">Chơi tiếp</button><button class="btn" id="restart-overlay" style="margin-top:8px">Ván mới</button></div>
+ </div>
+ <div class="mobile-controls" aria-label="Điều khiển trên điện thoại"><button data-dir="up" aria-label="Lên">↑</button><button data-dir="left" aria-label="Trái">←</button><button data-dir="down" aria-label="Xuống">↓</button><button data-dir="right" aria-label="Phải">→</button></div>
+ <section class="instructions"><strong>Cách chơi</strong><br>• Mỗi lượt, tất cả ô sẽ trượt theo hướng bạn chọn.<br>• Hai ô cùng số chạm nhau sẽ gộp thành một ô có giá trị gấp đôi.<br>• Mỗi lượt di chuyển hợp lệ sẽ xuất hiện một ô mới.<br>• Đạt 2048 để chiến thắng; bạn vẫn có thể tiếp tục chơi và nâng điểm.</section>
+ <div class="footer">Gamevui.net · 2048 · Tiến trình điểm cao được lưu trên thiết bị này</div>
+</main>
+<script src="/games/2048-engine.js"></script>
+<script>
+(()=>{
+ const E=window.Game2048Engine,$=id=>document.getElementById(id);
+ const boardEl=$('board'),scoreEl=$('score'),bestEl=$('best'),overlay=$('overlay');
+ let board=E.emptyBoard(),score=0,best=0,won=false,keepPlaying=false,ended=false;
+ try{best=Number(localStorage.getItem('gamevui-2048-best'))||0;}catch{}
+ const fmt=n=>Number(n).toLocaleString('vi-VN');
+ function draw(animation={}){
+  const previous=new Map();
+  boardEl.querySelectorAll('.tile').forEach(tile=>{
+   const key=tile.dataset.row+','+tile.dataset.col;previous.set(key,{rect:tile.getBoundingClientRect()});
+  });
+  boardEl.innerHTML='';
+  const cells=[];
+  for(let r=0;r<4;r++)for(let c=0;c<4;c++){
+   const cell=document.createElement('div');cell.className='cell';cell.setAttribute('role','gridcell');
+   cell.setAttribute('aria-label',board[r][c]?String(board[r][c]):'Ô trống');
+   boardEl.appendChild(cell);cells.push(cell);
+   const value=board[r][c];if(!value)continue;
+   const tile=document.createElement('div');tile.className='tile';tile.textContent=value;
+   tile.dataset.value=value>32768?'high':String(value);if(value>32768){const hue=(Math.log2(value)*43)%360;tile.style.backgroundColor='hsl('+hue+' 72% 48%)';tile.style.color='#fff';}tile.dataset.row=r;tile.dataset.col=c;
+   tile.setAttribute('aria-label',String(value));cell.appendChild(tile);
+  }
+  const tileAt=(r,c)=>cells[r*4+c]?.querySelector('.tile');
+  const movedTargets=new Set();
+  (animation.moves||[]).forEach(move=>{
+   const fromKey=move.from.row+','+move.from.col,toKey=move.to.row+','+move.to.col;
+   const target=tileAt(move.to.row,move.to.col),old=previous.get(fromKey);
+   if(!target||!old)return;
+   const targetRect=target.getBoundingClientRect();
+   if(move.merged){
+    if(movedTargets.has(toKey)){
+     const ghost=document.createElement('div');ghost.className='tile-ghost';ghost.textContent=move.value;
+     ghost.style.background=getComputedStyle(target).backgroundColor;ghost.style.color=getComputedStyle(target).color;
+     ghost.style.left=old.rect.left+'px';ghost.style.top=old.rect.top+'px';ghost.style.width=old.rect.width+'px';ghost.style.height=old.rect.height+'px';document.body.appendChild(ghost);
+     const dx=targetRect.left-old.rect.left,dy=targetRect.top-old.rect.top;
+     const anim=ghost.animate([{transform:'translate(0,0) scale(1)',opacity:1},{transform:'translate('+dx+'px,'+dy+'px) scale(.35)',opacity:0}],{duration:190,easing:'cubic-bezier(.2,.7,.25,1)',fill:'forwards'});
+     anim.onfinish=()=>ghost.remove();return;
+    }
+    movedTargets.add(toKey);
+    const dx=old.rect.left-targetRect.left,dy=old.rect.top-targetRect.top;
+    target.animate([{transform:'translate('+dx+'px,'+dy+'px) scale(.72)'},{transform:'translate(0,0) scale(1.16)'},{transform:'translate(0,0) scale(1)'}],{duration:230,easing:'cubic-bezier(.2,.75,.25,1)'});
+    return;
+   }
+   const dx=old.rect.left-targetRect.left,dy=old.rect.top-targetRect.top;
+   if(Math.abs(dx)+Math.abs(dy)>1)target.animate([{transform:'translate('+dx+'px,'+dy+'px)'},{transform:'translate(0,0)'}],{duration:155,easing:'cubic-bezier(.2,.75,.25,1)'});
+  });
+  (animation.spawned||[]).forEach(item=>{if(!item)return;const tile=tileAt(item.row,item.col);if(tile)tile.classList.add('spawn');});
+  if((animation.merges||[]).length){boardEl.classList.remove('moving');void boardEl.offsetWidth;boardEl.classList.add('moving');}
+  scoreEl.textContent=fmt(score);bestEl.textContent=fmt(best);
+ }
+ function showOverlay(title,message,continueVisible){
+  $('overlay-title').textContent=title;$('overlay-message').textContent=message;
+  $('continue-game').style.display=continueVisible?'':'none';overlay.classList.remove('hidden');
+ }
+ function hideOverlay(){overlay.classList.add('hidden');}
+ function spawn(){const result=E.spawnTile(board);board=result.board;return result.tile;}
+ function start(){
+  board=E.emptyBoard();score=0;won=false;keepPlaying=false;ended=false;hideOverlay();const first=spawn(),second=spawn();draw({spawned:[first,second]});
+ }
+ function move(direction){
+  if(ended||(!keepPlaying&&won))return;
+  const result=E.moveBoard(board,direction);if(!result.moved)return;
+  board=result.board;score+=result.score;
+  if(score>best){best=score;try{localStorage.setItem('gamevui-2048-best',String(best));}catch{}}
+  const spawned=spawn();draw({moves:result.moves,merges:result.merges,spawned:[spawned]});
+  if(!won&&E.hasWon(board)){won=true;showOverlay('Bạn đã đạt 2048!','Tuyệt vời! Bạn có thể tiếp tục để nâng điểm.',true);return;}
+  if(!E.hasMoves(board)){ended=true;showOverlay('Hết nước đi!','Điểm của bạn: '+fmt(score)+'. Bắt đầu ván mới để thử lại.',false);}
+ }
+ document.addEventListener('keydown',event=>{
+  const map={ArrowUp:'up',w:'up',W:'up',ArrowDown:'down',s:'down',S:'down',ArrowLeft:'left',a:'left',A:'left',ArrowRight:'right',d:'right',D:'right'};
+  const direction=map[event.key];if(direction){event.preventDefault();move(direction);}
+ });
+ document.querySelectorAll('[data-dir]').forEach(button=>button.addEventListener('click',()=>move(button.dataset.dir)));
+ $('new-game').addEventListener('click',start);$('restart-overlay').addEventListener('click',start);
+ $('continue-game').addEventListener('click',()=>{keepPlaying=true;hideOverlay();});
+ let touch=null;
+ $('board-wrap').addEventListener('touchstart',event=>{const t=event.changedTouches[0];touch={x:t.clientX,y:t.clientY};},{passive:true});
+ $('board-wrap').addEventListener('touchend',event=>{
+  if(!touch)return;const t=event.changedTouches[0],dx=t.clientX-touch.x,dy=t.clientY-touch.y;touch=null;
+  if(Math.max(Math.abs(dx),Math.abs(dy))<24)return;
+  move(Math.abs(dx)>Math.abs(dy)?(dx>0?'right':'left'):(dy>0?'down':'up'));
+  event.preventDefault();
+ },{passive:false});
+ start();draw();
+})();
+</script>
+</body>
+</html>

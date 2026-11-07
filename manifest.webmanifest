@@ -1,0 +1,16 @@
+{
+  "id": "/",
+  "name": "GameVerse",
+  "short_name": "GameVerse",
+  "description": "One Universe. Endless Games.",
+  "lang": "vi",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#08091b",
+  "theme_color": "#100b35",
+  "icons": [
+    { "src": "/gameverse-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
