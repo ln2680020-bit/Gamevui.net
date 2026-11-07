@@ -59,12 +59,16 @@
   function drawCards(g,seat,n){for(let i=0;i<n;i++){recycle(g);if(g.draw.length)g.hands[seat].push(g.draw.pop());}}
   function unoCanPlay(card,g){return card[0]==='W'||card[0]===g.color||card[1]===g.top[1];}
   function colorFor(hand){return COLORS.sort((a,b)=>hand.filter(c=>c[0]===b&&c[0]!=='W').length-hand.filter(c=>c[0]===a&&c[0]!=='W').length)[0];}
-  function unoPlay(g,seat,card,color){
-    if(g.type!=='uno'||g.winner>=0||seat!==g.turn||!g.hands[seat].includes(card))return false;
-    const h=g.hands[seat],previousPenalty=g.pendingDraw?.amount||0;if(g.drawnCardSeat===seat&&(card!==g.drawnCard||h.length===0))return false;if(g.pendingDraw){if(!['D','F'].includes(card[1]))return false;}
+  function unoPlayCards(g,seat,cards,color){
+    if(g.type!=='uno'||g.winner>=0||seat!==g.turn||!Array.isArray(cards)||!cards.length||cards.length>2)return false;
+    const card=cards[0],h=g.hands[seat],previousPenalty=g.pendingDraw?.amount||0;
+    if(cards.some(c=>c!==card)||h.filter(c=>c===card).length<cards.length)return false;
+    if(g.drawnCardSeat===seat&&(card!==g.drawnCard||cards.length!==1))return false;
+    if(g.pendingDraw){if(!['D','F'].includes(card[1]))return false;}
     else if(!unoCanPlay(card,g))return false;
-    h.splice(h.indexOf(card),1);g.discard.push(g.top);g.top=card;g.color=card[0]==='W'?(COLORS.includes(color)?color:colorFor(h)):card[0];
-    g.drawnCardSeat=-1;g.drawnCard=null;add(g,g.seats[seat].name+' đánh '+card);
+    for(const c of cards)h.splice(h.indexOf(c),1);
+    g.discard.push(g.top);g.top=card;g.color=card[0]==='W'?(COLORS.includes(color)?color:colorFor(h)):card[0];
+    g.drawnCardSeat=-1;g.drawnCard=null;add(g,g.seats[seat].name+' đánh '+(cards.length===2?'đôi ':'')+card);
     if(h.length===1){g.unoPendingSeat=seat;g.unoCalledSeat=seat;}else if(!h.length){g.unoPendingSeat=-1;g.unoCalledSeat=-1;}
     let steps=1;const kind=card[1],nextSeat=(seat+g.direction+g.seats.length)%g.seats.length;
     if(kind==='V'){if(g.seats.length===2)steps=2;else g.direction*=-1;}
@@ -73,6 +77,7 @@
     if(!h.length){finish(g,seat);g.pendingDraw=null;}else next(g,steps);
     return true;
   }
+  function unoPlay(g,seat,card,color){return unoPlayCards(g,seat,[card],color);}
   function unoDraw(g,seat){
     if(g.type!=='uno'||g.winner>=0||seat!==g.turn||g.pendingDraw||g.drawnCardSeat===seat)return false;
     drawCards(g,seat,1);const card=g.hands[seat].at(-1);add(g,g.seats[seat].name+' bốc 1 lá');
@@ -90,5 +95,5 @@
     return unoDraw(g,seat);
   }
   function snapshot(g){return {type:g.type,names:g.seats.map(s=>s.name),bots:g.seats.map(s=>s.bot),turn:g.turn,winner:g.winner,message:g.message,history:g.history.slice(),hands:g.hands.map((h,i)=>i===0?h.slice():h.length),hand:g.hands[0].slice(),last:g.last.slice(),samCalled:g.samCalled,top:g.top,color:g.color,direction:g.direction,pendingDraw:g.pendingDraw?{...g.pendingDraw}:null,drawnCardSeat:g.drawnCardSeat,drawnCard:g.drawnCard};}
-  return {createGame,samCombo,beats,samMove,samPlay,samPass,samCall,unoCanPlay,unoPlay,unoDraw,unoPass,unoAccept,botTurn,snapshot};
+  return {createGame,samCombo,beats,samMove,samPlay,samPass,samCall,unoCanPlay,unoPlay,unoPlayCards,unoDraw,unoPass,unoAccept,botTurn,snapshot};
 });
