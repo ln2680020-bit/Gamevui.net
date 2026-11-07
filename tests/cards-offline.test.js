@@ -48,6 +48,7 @@ test('Sâm bot can make a legal local move and end a round', () => {
 
 test('UNO engine deals seven cards and supports local winning moves', () => {
   const game = engine.createGame('uno', 2);
+  game.turn = 0;
   assert.equal(game.seats.length, 3);
   assert.ok(game.hands.every(hand => hand.length === 7));
   game.hands[0] = ['R5'];
