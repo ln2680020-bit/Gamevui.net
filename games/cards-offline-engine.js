@@ -22,7 +22,7 @@
   function samMove(hand,lastCombo){
     const cards=hand.slice().sort((a,b)=>samRank(a)-samRank(b));let best=null;
     function visit(start,picked){
-      if(picked.length){const combo=samCombo(picked);if(combo&&beats(combo,lastCombo)&&(!best||(lastCombo?picked.length<best.cards.length:picked.length>best.cards.length)||(picked.length===best.cards.length&&combo.high<best.combo.high)))best={cards:picked.slice(),combo};}
+      if(picked.length){const combo=canFinishSam(picked,hand)?samCombo(picked):null;if(combo&&beats(combo,lastCombo)&&(!best||(lastCombo?picked.length<best.cards.length:picked.length>best.cards.length)||(picked.length===best.cards.length&&combo.high<best.combo.high)))best={cards:picked.slice(),combo};}
       if(picked.length>=10)return;
       for(let i=start;i<cards.length;i++){picked.push(cards[i]);visit(i+1,picked);picked.pop();}
     }
@@ -61,7 +61,7 @@
   function colorFor(hand){return COLORS.sort((a,b)=>hand.filter(c=>c[0]===b&&c[0]!=='W').length-hand.filter(c=>c[0]===a&&c[0]!=='W').length)[0];}
   function unoPlay(g,seat,card,color){
     if(g.type!=='uno'||g.winner>=0||seat!==g.turn||!g.hands[seat].includes(card))return false;
-    const h=g.hands[seat];if(g.pendingDraw){if(!['D','F'].includes(card[1]))return false;}
+    const h=g.hands[seat];if(g.drawnCardSeat===seat&&(card!==g.drawnCard||h.length===0))return false;if(g.pendingDraw){if(!['D','F'].includes(card[1]))return false;}
     else if(!unoCanPlay(card,g))return false;
     h.splice(h.indexOf(card),1);g.discard.push(g.top);g.top=card;g.color=card[0]==='W'?(COLORS.includes(color)?color:colorFor(h)):card[0];
     g.drawnCardSeat=-1;g.drawnCard=null;add(g,g.seats[seat].name+' đánh '+card);
@@ -82,7 +82,7 @@
   function unoAccept(g,seat){if(g.type!=='uno'||g.winner>=0||!g.pendingDraw||g.pendingDraw.seat!==seat||g.turn!==seat)return false;const amount=g.pendingDraw.amount;drawCards(g,seat,amount);g.pendingDraw=null;add(g,g.seats[seat].name+' rút '+amount+' lá phạt');next(g);return true;}
   function botTurn(g){
     const seat=g.turn,h=g.hands[seat];if(!g.seats[seat].bot||g.winner>=0)return false;
-    if(g.type==='sam'){const move=samMove(h,g.lastCombo);if(move)return samPlay(g,seat,move.cards);if(g.last.length)return samPass(g,seat);return false;}
+    if(g.type==='sam'){const move=samMove(h,g.lastCombo);if(move)return samPlay(g,seat,move.cards);if(g.last.length)return samPass(g,seat);next(g);add(g,g.seats[seat].name+' không có nước đi hợp lệ; bỏ lượt');return true;}
     if(g.pendingDraw){const stack=h.find(c=>['D','F'].includes(c[1]));if(stack)return unoPlay(g,seat,stack,colorFor(h));return unoAccept(g,seat);}
     if(g.drawnCardSeat===seat){const c=g.drawnCard;if(c&&unoCanPlay(c,g))return unoPlay(g,seat,c,colorFor(h));return unoPass(g,seat);}
     const playable=h.filter(c=>unoCanPlay(c,g)).sort((a,b)=>{const score=c=>(c[0]==='W'?5:0)+(['D','F','S','V'].includes(c[1])?3:0)+(Number(c[1])||0)*.1;return score(b)-score(a);});
