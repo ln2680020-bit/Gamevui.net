@@ -57,6 +57,16 @@ test('UNO engine deals seven cards and supports local winning moves', () => {
   assert.equal(game.winner, 0);
 });
 
+test('UNO can play two identical cards together in offline mode', () => {
+  const game = engine.createGame('uno', 2);
+  game.turn = 0;
+  game.top = 'R3';
+  game.color = 'R';
+  game.hands[0] = ['R5', 'R5', 'B2'];
+  assert.equal(engine.unoPlayCards(game, 0, ['R5', 'R5']), true);
+  assert.deepEqual(game.hands[0], ['B2']);
+});
+
 test('UNO enforces playing the card just drawn and lets a bot play locally', () => {
   const game = engine.createGame('uno', 1);
   game.turn = 0;
