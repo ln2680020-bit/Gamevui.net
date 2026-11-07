@@ -100,20 +100,20 @@ test('seven standalone games keep local play as the default and gate online mode
     game,
     fs.readFileSync(path.join(root, 'games', game + '.html'), 'utf8')
   ]));
-  assert.doesNotMatch(pages['2048'], /\\bfetch\\s*\\(|EventSource|WebSocket|\\/api\\//);
-  assert.match(pages.caro, /if\\(params\\.get\\('online'\\)==='1'\\)\\{onlineMode\\(\\);return;\\}/);
-  assert.match(pages.caro, /botMode=params\\.get\\('bot'\\)==='1'/);
-  assert.match(pages.chess, /if\\(params\\.get\\('online'\\)==='1'\\)\\{onlineMode\\(\\);return;\\}/);
-  assert.match(pages.chess, /botMode=params\\.get\\('bot'\\)==='1'/);
+  assert.doesNotMatch(pages['2048'], /\bfetch\s*\(|EventSource|WebSocket|\/api\//);
+  assert.match(pages.caro, /if\(params\.get\('online'\)==='1'\)\{onlineMode\(\);return;\}/);
+  assert.match(pages.caro, /botMode=params\.get\('bot'\)==='1'/);
+  assert.match(pages.chess, /if\(params\.get\('online'\)==='1'\)\{onlineMode\(\);return;\}/);
+  assert.match(pages.chess, /botMode=params\.get\('bot'\)==='1'/);
   assert.match(pages.monopoly, /let mode='local'/);
-  assert.match(pages.monopoly, /function localStart\\(/);
-  assert.match(pages.monopoly, /params\\.get\\('online'\\)==='1'&&params\\.get\\('room'\\)/);
+  assert.match(pages.monopoly, /function localStart\(/);
+  assert.match(pages.monopoly, /params\.get\('online'\)==='1'&&params\.get\('room'\)/);
   assert.match(pages.sudoku, /let online=false/);
-  assert.match(pages.sudoku, /freshLocal\\(\\);/);
-  assert.match(pages.sudoku, /params\\.get\\('online'\\)==='1'&&params\\.get\\('room'\\)/);
-  assert.match(pages.word, /get\\('online'\\)==='1'/);
-  assert.match(pages.word, /startWord\\(\\);/);
+  assert.match(pages.sudoku, /freshLocal\(\);/);
+  assert.match(pages.sudoku, /params\.get\('online'\)==='1'&&params\.get\('room'\)/);
+  assert.match(pages.word, /get\('online'\)==='1'/);
+  assert.match(pages.word, /startWord\(\);/);
   assert.match(pages.sequence, /let online=false/);
-  assert.match(pages.sequence, /function startSoloGame\\(/);
-  assert.match(pages.sequence, /params\\.get\\('online'\\)==='1'&&params\\.get\\('room'\\)/);
+  assert.match(pages.sequence, /function startSoloGame\(/);
+  assert.match(pages.sequence, /params\.get\('online'\)==='1'&&params\.get\('room'\)/);
 });
