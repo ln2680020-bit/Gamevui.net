@@ -68,3 +68,28 @@ test('every standalone game page has a matching server route and offline cache e
 test('offline cache version changes when the shell is revised', () => {
   assert.match(worker, /gameverse-offline-v3/);
 });
+
+
+test('all local game pages reference available same-origin script assets', () => {
+  const games = ['2048', 'caro', 'chess', 'monopoly', 'sequence', 'sudoku', 'word'];
+  for (const game of games) {
+    const html = fs.readFileSync(path.join(root, 'games', game + '.html'), 'utf8');
+    const scripts = [...html.matchAll(/<script\\b[^>]*\\bsrc=[\"']([^\"']+)[\"']/gi)].map(match => match[1]);
+    for (const src of scripts) {
+      assert.ok(src.startsWith('/'), game + ' has a non-root script URL: ' + src);
+      assert.ok(fs.existsSync(path.join(root, src.replace(/^\\//, ''))), game + ' references missing script: ' + src);
+      assert.ok(worker.includes(\"'\" + src + \"'\"), 'Offline shell does not precache ' + src);
+    }
+  }
+});
+
+test('hub catalog includes all nine games and local standalone pages are precached', () => {
+  const hub = fs.readFileSync(path.join(root, 'hub.html'), 'utf8');
+  for (const title of ['Sâm', 'UNO', 'Cờ vua', 'Cờ caro', 'Cờ tỷ phú', '2048', 'Sudoku', 'Đoán từ', 'Bấm ô theo thứ tự']) assert.ok(hub.includes(title), 'Hub catalog is missing: ' + title);
+  for (const route of ['/games/2048', '/games/caro', '/games/chess', '/games/monopoly', '/games/sudoku', '/games/word', '/games/sequence']) assert.ok(worker.includes(\"'\" + route + \"'\"), 'Offline shell is missing: ' + route);
+});
+
+test('Sâm and UNO are not falsely marked offline-ready while client requires server events', () => {
+  const hub = fs.readFileSync(path.join(root, 'hub.html'), 'utf8'); const play = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  assert.match(hub, /data-game=\"sam\"/); assert.match(hub, /data-game=\"uno\"/); assert.match(play, /new EventSource/); assert.match(play, /\\/api\\//);
+});
