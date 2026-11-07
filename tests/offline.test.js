@@ -66,7 +66,7 @@ test('every standalone game page has a matching server route and offline cache e
 });
 
 test('offline cache version changes when the shell is revised', () => {
-  assert.match(worker, /gameverse-offline-v3/);
+  assert.match(worker, /gameverse-offline-v4/);
 });
 
 
