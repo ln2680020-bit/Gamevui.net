@@ -48,3 +48,12 @@ The server also advertises online game types `sam`, `uno`, `caro`, `chess`, `mon
 ## Important limitation
 
 This is a source inspection snapshot, not a claim that all games already work offline. No production deployment is authorized by this document.
+
+
+## Detailed local-play audit (2026-11-07)
+
+The Game Hub catalog contains nine games. Seven have standalone game pages served at `/games/...` and are included in the offline shell: 2048, Caro, Chess, Monopoly, Sudoku, Word, and Sequence. The existing Caro and Chess pages already support a local bot through `bot=1` and `difficulty=easy|medium|hard`; Monopoly has a local mode; Sudoku, Word, and Sequence contain solo-play flows; 2048 is local-first and stores its best score in browser storage.
+
+Sâm and UNO are different: they run inside `/play` and their current client uses the server room API and EventSource for game state. Caching `/play` only preserves its HTML shell; it does not make Sâm or UNO playable offline. Dedicated local game state, turn handling, and bot logic are still required for those two games. Do not report the entire nine-game offline goal as complete until those local modes are implemented and tested.
+
+The current Service Worker caches the seven standalone game routes, the `/play` shell, the shared `/invite-client.js`, and the local game engines. It deliberately bypasses API, health, event-stream, and socket endpoints. Offline navigation can display previously cached pages, but page availability and functional offline gameplay are separate acceptance criteria.
