@@ -108,3 +108,12 @@ test('offline Sâm and UNO reuse the classic GameVerse table, hand, effects and 
   assert.match(page, /Bình luận/);
   assert.match(page, /Thả cảm xúc/);
 });
+
+
+test('offline Sâm and UNO browser script parses without syntax errors', () => {
+  const vm = require('node:vm');
+  const page = fs.readFileSync(path.join(root, 'games', 'cards-offline.html'), 'utf8');
+  const scripts = [...page.matchAll(/<script[^>]*>([\\s\\S]*?)<\\/script>/gi)].map(m => m[1]).filter(s => s.trim());
+  assert.equal(scripts.length, 1);
+  assert.doesNotThrow(() => new vm.Script(scripts[0], { filename: 'cards-offline-inline.js' }));
+});
