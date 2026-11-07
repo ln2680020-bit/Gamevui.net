@@ -107,6 +107,11 @@ test('offline Sâm and UNO reuse the classic GameVerse table, hand, effects and 
   assert.match(page, /offline-bots/);
   assert.match(page, /Bình luận/);
   assert.match(page, /Thả cảm xúc/);
+  for (const marker of ['turn-overview', 'next-turn', 'player-turn-dot', 'live-ticker', 'game-extras', 'rotate-notice', 'timer', 'confetti']) {
+    assert.ok(page.includes(marker), 'missing original bot-game layout/effect marker: ' + marker);
+  }
+  assert.match(page, /function animateDeal\(\)[\s\S]*deal-hidden/);
+  assert.match(page, /function runBots\(\)[\s\S]*flight\(from,to/);
 });
 
 
