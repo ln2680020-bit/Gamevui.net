@@ -96,3 +96,24 @@ test('UNO enforces playing the card just drawn and lets a bot play locally', () 
   assert.equal(engine.botTurn(botGame), true);
   assert.equal(botGame.winner, 1);
 });
+
+
+test('offline Sâm and UNO reuse the classic GameVerse table, hand, effects and chat layout', () => {
+  const page = fs.readFileSync(path.join(root, 'games', 'cards-offline.html'), 'utf8');
+  for (const marker of ['game-screen', 'game-topbar', 'player-strip', 'game-table-area', 'felt', 'hand-zone', 'action-bar', 'game-chat-dock', 'chat-box', 'emote-row', 'uno-flight', 'action-fx', 'global-ticker']) {
+    assert.ok(page.includes(marker), 'missing classic UI marker: ' + marker);
+  }
+  assert.match(page, /offline-start/);
+  assert.match(page, /offline-bots/);
+  assert.match(page, /Bình luận/);
+  assert.match(page, /Thả cảm xúc/);
+});
+
+
+test('offline Sâm and UNO browser script parses without syntax errors', () => {
+  const vm = require('node:vm');
+  const page = fs.readFileSync(path.join(root, 'games', 'cards-offline.html'), 'utf8');
+  const scripts = page.split('<script').slice(1).map(part => part.slice(part.indexOf('>') + 1, part.indexOf('</script>'))).filter(s => s.trim());
+  assert.equal(scripts.length, 1);
+  assert.doesNotThrow(() => new vm.Script(scripts[0], { filename: 'cards-offline-inline.js' }));
+});
