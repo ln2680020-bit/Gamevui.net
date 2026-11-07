@@ -91,5 +91,5 @@ test('hub catalog includes all nine games and local standalone pages are precach
 
 test('Sâm and UNO are not falsely marked offline-ready while client requires server events', () => {
   const hub = fs.readFileSync(path.join(root, 'hub.html'), 'utf8'); const play = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-  assert.match(hub, /data-game="sam"/); assert.match(hub, /data-game="uno"/); assert.match(play, /new EventSource/); assert.match(play, /\\/api\//);
+  assert.match(hub, /data-game="sam"/); assert.match(hub, /data-game="uno"/); assert.match(play, /new EventSource/); assert.ok(play.includes('/api/'));
 });
