@@ -61,7 +61,7 @@
   function colorFor(hand){return COLORS.sort((a,b)=>hand.filter(c=>c[0]===b&&c[0]!=='W').length-hand.filter(c=>c[0]===a&&c[0]!=='W').length)[0];}
   function unoPlay(g,seat,card,color){
     if(g.type!=='uno'||g.winner>=0||seat!==g.turn||!g.hands[seat].includes(card))return false;
-    const h=g.hands[seat];if(g.drawnCardSeat===seat&&(card!==g.drawnCard||h.length===0))return false;if(g.pendingDraw){if(!['D','F'].includes(card[1]))return false;}
+    const h=g.hands[seat],previousPenalty=g.pendingDraw?.amount||0;if(g.drawnCardSeat===seat&&(card!==g.drawnCard||h.length===0))return false;if(g.pendingDraw){if(!['D','F'].includes(card[1]))return false;}
     else if(!unoCanPlay(card,g))return false;
     h.splice(h.indexOf(card),1);g.discard.push(g.top);g.top=card;g.color=card[0]==='W'?(COLORS.includes(color)?color:colorFor(h)):card[0];
     g.drawnCardSeat=-1;g.drawnCard=null;add(g,g.seats[seat].name+' đánh '+card);
@@ -69,7 +69,7 @@
     let steps=1;const kind=card[1],nextSeat=(seat+g.direction+g.seats.length)%g.seats.length;
     if(kind==='V'){if(g.seats.length===2)steps=2;else g.direction*=-1;}
     else if(kind==='S')steps=2;
-    else if(kind==='D'||kind==='F'){const amount=kind==='D'?2:4;g.pendingDraw={seat:nextSeat,amount};}
+    else if(kind==='D'||kind==='F'){const amount=(kind==='D'?2:4)+previousPenalty;g.pendingDraw={seat:nextSeat,amount};}
     if(!h.length){finish(g,seat);g.pendingDraw=null;}else next(g,steps);
     return true;
   }
