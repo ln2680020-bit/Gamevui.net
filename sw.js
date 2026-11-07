@@ -1,7 +1,8 @@
-const CACHE_NAME = 'gameverse-offline-v2';
+const CACHE_NAME = 'gameverse-offline-v3';
 const SHELL = [
   '/',
   '/play',
+  '/invite-client.js',
   '/games/caro',
   '/games/chess',
   '/games/2048',
