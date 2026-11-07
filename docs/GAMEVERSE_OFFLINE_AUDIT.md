@@ -24,16 +24,16 @@ The `games/` directory currently contains seven standalone HTML game pages:
 | Sudoku | `games/sudoku.html` | Inline |
 | Word | `games/word.html` | Inline |
 
-The server also advertises online game types `sam`, `uno`, `caro`, `chess`, `monopoly`, `sudoku`, `word`, and `sequence`. Sâm and UNO are room/server-driven in the current architecture; they are not standalone files in `games/`. Their offline bot mode must be designed separately and must not call room APIs.
+The server also advertises online game types `sam`, `uno`, `caro`, `chess`, `monopoly`, `sudoku`, `word`, and `sequence`. The online Sâm and UNO modes remain room/server-driven in `/play`. A separate standalone local bot mode now exists at `/games/cards-offline` and does not call room APIs.
 
 ## Current offline implementation findings
 
-- `sw.js` uses a fixed precache list with seven standalone game routes and three engine files.
+- `sw.js` uses a fixed precache list for the seven standalone game routes, the separate Sâm/UNO offline page, `/play`, and their local engines.
 - The current list uses `/games/caro`, `/games/chess`, etc.; the physical files are `.html` files and the server route mapping must be verified before relying on these cache keys.
-- The fixed list does not explicitly include every page dependency (for example `invite.html`, `invite-client.js`, and any other local assets discovered later).
+- The fixed list explicitly includes the shared `invite-client.js` and the Sâm/UNO offline engine. Continue checking every game's additional local dependencies as the audit expands.
 - Runtime caching caches same-origin successful GET assets, but server APIs and realtime endpoints are intentionally excluded.
 - The existing `tests/offline.test.js` verifies that strings appear in `sw.js`; it does not prove that each route loads, that assets are cached, or that a game can be played with the network disabled.
-- Sâm/UNO and online room operations depend on server APIs/realtime connections. They cannot provide online multiplayer while offline; a separate local game mode is needed for offline play.
+- Online Sâm/UNO room operations still depend on server APIs/realtime connections and cannot provide online multiplayer while offline. The new local bot mode is separate and can run without those services after its assets are cached.
 
 ## Required next audit steps
 
@@ -41,9 +41,9 @@ The server also advertises online game types `sam`, `uno`, `caro`, `chess`, `mon
 2. Verify server route resolution for extensionless paths versus physical `.html` files.
 3. Enumerate local CSS, JS, fonts, images, and any CDN dependencies for each game.
 4. Inspect each game for API, WebSocket, EventSource, account, and leaderboard calls.
-5. Classify each game as: offline playable now, page-only cached, needs local engine/bot, or online-only.
-6. Replace brittle string-presence tests with route/asset coverage tests and browser-level offline gameplay checks.
-7. Implement and test in stages on the test deployment before any production release.
+5. Complete browser-level offline gameplay checks for all nine games, including first installation, refresh, and direct navigation with DevTools network disabled.
+6. Verify that online-only features remain gracefully unavailable offline without breaking local play.
+7. Deploy to the test site only after browser checks pass; keep production untouched until the user approves.
 
 ## Important limitation
 
@@ -54,9 +54,9 @@ This is a source inspection snapshot, not a claim that all games already work of
 
 The Game Hub catalog contains nine games. Seven have standalone game pages served at `/games/...` and are included in the offline shell: 2048, Caro, Chess, Monopoly, Sudoku, Word, and Sequence. The existing Caro and Chess pages already support a local bot through `bot=1` and `difficulty=easy|medium|hard`; Monopoly has a local mode; Sudoku, Word, and Sequence contain solo-play flows; 2048 is local-first and stores its best score in browser storage.
 
-Sâm and UNO are different: they run inside `/play` and their current client uses the server room API and EventSource for game state. Caching `/play` only preserves its HTML shell; it does not make Sâm or UNO playable offline. Dedicated local game state, turn handling, and bot logic are still required for those two games. Do not report the entire nine-game offline goal as complete until those local modes are implemented and tested.
+Sâm and UNO's online modes still run inside `/play` and use the server room API and EventSource. Caching `/play` only preserves its HTML shell. A separate local bot mode has since been added at `/games/cards-offline`; it must pass automated and real-browser offline checks before Sâm/UNO are accepted as complete.
 
-The current Service Worker caches the seven standalone game routes, the `/play` shell, the shared `/invite-client.js`, and the local game engines. It deliberately bypasses API, health, event-stream, and socket endpoints. Offline navigation can display previously cached pages, but page availability and functional offline gameplay are separate acceptance criteria.
+The current Service Worker caches the seven standalone game routes, the `/play` shell, the separate Sâm/UNO offline page and engine, the shared `/invite-client.js`, and the local game engines. It deliberately bypasses API, health, event-stream, and socket endpoints. Offline navigation can display previously cached pages, but page availability and functional offline gameplay are separate acceptance criteria.
 
 
 ## Sâm and UNO local bot implementation (2026-11-07)
